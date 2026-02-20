@@ -7,7 +7,6 @@ import time as _time
 from typing import Any, Optional
 from urllib.parse import parse_qsl as _parse_qsl, urlsplit as _urlsplit, urlunsplit as _urlunsplit
 
-from curl_cffi import requests as curl_requests
 import requests
 
 from .base import BaseScraper
@@ -15,12 +14,20 @@ from .backoff import BackoffStrategy
 from .models import Task
 from .rate_limiter import RateLimiter
 
+# Optional dependency: curl_cffi (better anti-bot)
+try:
+    from curl_cffi import requests as curl_requests  # type: ignore
+except Exception:
+    curl_requests = None
+
 
 class Web1Scraper(BaseScraper):
-    """Scraper for gmgn.ai API using curl_cffi for browser impersonation.
+    """Scraper for gmgn.ai API.
 
-    Supports raw cURL command parsing to replicate browser-level requests
-    and bypass basic anti-bot detection."""
+    Behaviour:
+    - If curl_cffi is available: use browser impersonation.
+    - Else: fallback to requests (may be blocked by anti-bot, but project still runs).
+    """
 
     def __init__(
         self,
@@ -34,29 +41,28 @@ class Web1Scraper(BaseScraper):
         super().__init__(*args, **kwargs)
         self._rate_limiter = rate_limiter
         self._backoff = backoff
-        self._max_retries = max_retries
-        self._timeout = timeout
+        self._max_retries = max(1, int(max_retries))
+        self._timeout = int(timeout)
 
     def fetch(self, task: Task) -> Any:
-        """Send a request to gmgn.ai, optionally parsed from a raw cURL command.
-
-        Retries on failure using exponential backoff up to max_retries."""
         raw_curl = task.meta.get("raw_curl")
-        if raw_curl:
+        parsed_fields = task.meta.get("curl_fields")  # optional pre-parsed fields
+
+        if parsed_fields and isinstance(parsed_fields, dict):
+            fields = parsed_fields
+        elif raw_curl:
             fields = _parse_curl_to_fields(raw_curl)
-            method = fields["METHOD"]
-            api_url = fields["API_URL"]
-            params = fields["PARAMS"]
-            headers = fields["HEADERS"]
-            cookies = fields["COOKIES"] or None
-            json_data = fields["JSON_DATA"]
-            raw_body = fields["RAW_BODY"] or None
-            if isinstance(json_data, dict):
-                if "chain" in task.meta:
-                    json_data["chain"] = task.meta["chain"]
-                if "addresses" in task.meta:
-                    json_data["addresses"] = task.meta["addresses"]
-            token = (task.meta.get("addresses") or [None])[0]
+        else:
+            fields = {}
+
+        if fields:
+            method = fields.get("METHOD", "GET")
+            api_url = fields.get("API_URL", task.url)
+            params = fields.get("PARAMS") or None
+            headers = fields.get("HEADERS") or None
+            cookies = fields.get("COOKIES") or None
+            json_data = fields.get("JSON_DATA")
+            raw_body = fields.get("RAW_BODY") or None
         else:
             method = task.meta.get("method", "GET")
             api_url = task.url
@@ -65,27 +71,52 @@ class Web1Scraper(BaseScraper):
             cookies = task.meta.get("cookies")
             json_data = task.meta.get("json")
             raw_body = task.meta.get("data")
-            token = (task.meta.get("addresses") or [None])[0]
+
+        # Inject per-task payload override (addresses / chain)
+        if isinstance(json_data, dict):
+            if "chain" in task.meta:
+                json_data["chain"] = task.meta["chain"]
+            if "addresses" in task.meta:
+                json_data["addresses"] = task.meta["addresses"]
+
+        token = (task.meta.get("addresses") or [None])[0]
 
         attempt = 0
         while True:
             attempt += 1
             self._rate_limiter.acquire()
-            session = curl_requests.Session()
             try:
-                response = session.request(
-                    method=method,
-                    url=api_url,
-                    params=params or None,
-                    json=json_data,
-                    data=None if json_data is not None else raw_body,
-                    headers=headers,
-                    cookies=cookies,
-                    impersonate="chrome120",
-                    timeout=self._timeout,
-                )
-                response._token = token
-                return response
+                if curl_requests is not None:
+                    # curl_cffi path
+                    session = curl_requests.Session()
+                    resp = session.request(
+                        method=method,
+                        url=api_url,
+                        params=params,
+                        json=json_data,
+                        data=None if json_data is not None else raw_body,
+                        headers=headers,
+                        cookies=cookies,
+                        impersonate="chrome120",
+                        timeout=self._timeout,
+                    )
+                else:
+                    # fallback path (standard requests)
+                    resp = requests.request(
+                        method=method,
+                        url=api_url,
+                        params=params,
+                        json=json_data,
+                        data=None if json_data is not None else raw_body,
+                        headers=headers,
+                        cookies=cookies,
+                        timeout=self._timeout,
+                    )
+
+                # attach token for parse
+                setattr(resp, "_token", token)
+                return resp
+
             except Exception as exc:  # noqa: BLE001
                 if attempt >= self._max_retries:
                     raise
@@ -93,11 +124,9 @@ class Web1Scraper(BaseScraper):
                 _time.sleep(sleep_s)
 
     def parse(self, response: Any) -> Any:
-        """Parse the gmgn.ai JSON response and extract token data.
-
-        Handles invalid JSON, non-200 status codes, and empty data gracefully."""
         token = getattr(response, "_token", None)
         status_code = getattr(response, "status_code", None)
+
         try:
             payload = response.json()
         except Exception:  # noqa: BLE001
@@ -109,7 +138,7 @@ class Web1Scraper(BaseScraper):
                 "raw_text": raw_text[:1000],
             }
 
-        if status_code not in (200, 201):
+        if status_code is None or not (200 <= int(status_code) < 300):
             error_msg = None
             if isinstance(payload, dict):
                 error_msg = payload.get("error") or payload.get("message")
@@ -127,16 +156,15 @@ class Web1Scraper(BaseScraper):
                     "token": token,
                     "error": f"can not find {token}" if token else "can not find token",
                     "status_code": status_code,
+                    "raw": payload,
                 }
             return data
+
         return payload
 
 
 class Web2Scraper(BaseScraper):
-    """Scraper for the DexScreener public REST API.
-
-    Uses standard HTTP requests to search for token pair data
-    on decentralized exchanges."""
+    """Scraper for DexScreener public REST API."""
 
     def __init__(
         self,
@@ -150,13 +178,10 @@ class Web2Scraper(BaseScraper):
         super().__init__(*args, **kwargs)
         self._rate_limiter = rate_limiter
         self._backoff = backoff
-        self._max_retries = max_retries
-        self._timeout = timeout
+        self._max_retries = max(1, int(max_retries))
+        self._timeout = int(timeout)
 
     def fetch(self, task: Task) -> Any:
-        """Send a GET request to DexScreener search API.
-
-        Retries on failure using exponential backoff up to max_retries."""
         attempt = 0
         while True:
             attempt += 1
@@ -169,8 +194,9 @@ class Web2Scraper(BaseScraper):
                     headers=task.meta.get("headers"),
                     timeout=self._timeout,
                 )
+                # attach debug info for parse()
                 resp.latency_ms = int((_time.time() - start) * 1000)
-                resp._query = (task.params or {}).get("q")  # attach query for parse
+                resp._query = (task.params or {}).get("q")
                 return resp
             except Exception as exc:  # noqa: BLE001
                 if attempt >= self._max_retries:
@@ -179,7 +205,6 @@ class Web2Scraper(BaseScraper):
                 _time.sleep(sleep_s)
 
     def parse(self, response: Any) -> Any:
-        """Parse DexScreener JSON response and extract the top trading pair data."""
         try:
             data = response.json()
         except Exception:  # noqa: BLE001
@@ -217,7 +242,6 @@ class Web2Scraper(BaseScraper):
 
 
 def _parse_cookie_str(raw: str) -> dict[str, str]:
-    """Parse a raw cookie header string into a key-value dictionary."""
     cookies: dict[str, str] = {}
     for pair in raw.split(";"):
         part = pair.strip()
@@ -229,10 +253,7 @@ def _parse_cookie_str(raw: str) -> dict[str, str]:
 
 
 def _parse_curl_to_fields(curl_cmd: str) -> dict:
-    """Convert a raw cURL command string into structured request fields.
-
-    Returns a dict with keys: METHOD, API_URL, PARAMS, HEADERS,
-    COOKIES, JSON_DATA, RAW_BODY."""
+    """Convert a raw cURL command string into structured request fields."""
     tokens = _shlex.split(curl_cmd, posix=True)
     if not tokens or tokens[0] != "curl":
         raise ValueError("RAW_CURL must start with 'curl'.")
