@@ -8,20 +8,20 @@ from .models import ScrapeResult, Task
 
 
 class ThreadPoolController:
-    """Manages concurrent task execution using a thread pool with a dynamic concurrency limit.
+    """Manages concurrent task execution using a bounded thread pool.
 
-    Improvements vs. semaphore approach:
-    - Decreasing concurrency never blocks the caller (no deadlock).
-    - Uses a Condition + active counter to enforce limit.
-    - set_concurrency_limit() is instantaneous and safe at runtime.
+    Refactor goal:
+    - Fix potential deadlock/blocking in set_concurrency_limit() when decreasing.
+    - Do NOT change scraper behaviour; only scheduling behaviour.
     """
 
     def __init__(self, max_workers: int, initial_limit: int) -> None:
         self._executor = ThreadPoolExecutor(max_workers=max_workers)
-        self._limit_lock = threading.Lock()
-        self._cv = threading.Condition(self._limit_lock)
 
-        self._limit = max(1, int(initial_limit))
+        self._lock = threading.Lock()
+        self._cv = threading.Condition(self._lock)
+
+        self._limit = max(1, initial_limit)
         self._active = 0
         self._running = False
 
@@ -39,8 +39,8 @@ class ThreadPoolController:
         with self._cv:
             while self._running and self._active >= self._limit:
                 self._cv.wait(timeout=0.5)
+
             if not self._running:
-                # Still return a Future-like behaviour by submitting a tiny job that returns failure result.
                 return self._executor.submit(self._stopped_result, task)
 
             self._active += 1
@@ -71,15 +71,11 @@ class ThreadPoolController:
     def set_concurrency_limit(self, new_limit: int) -> tuple[int, int]:
         """Dynamically adjust the concurrency limit at runtime (non-blocking)."""
         with self._cv:
-            old = self._limit
+            old_limit = self._limit
             self._limit = max(1, int(new_limit))
             self._cv.notify_all()
-            return old, self._limit
+            return old_limit, self._limit
 
     @property
     def limit(self) -> int:
         return self._limit
-
-    @property
-    def active(self) -> int:
-        return self._active
