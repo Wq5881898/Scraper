@@ -1,5 +1,6 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
+import time
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
@@ -8,10 +9,22 @@ from .metrics import MetricsCollector
 
 
 class BaseScraper(ABC):
+    """Abstract base class defining the common scraping pipeline.
+
+    Subclasses must implement fetch() and parse() to handle
+    website-specific request and response logic.  The run() method
+    orchestrates validation, fetching, parsing, and metrics recording.
+    """
+
     def __init__(self, metrics: Optional[MetricsCollector] = None) -> None:
         self._metrics = metrics
 
     def run(self, task: Task) -> ScrapeResult:
+        """Execute the full scraping pipeline for a single task.
+
+        Returns a ScrapeResult regardless of success or failure,
+        recording metrics and capturing any exceptions.
+        """
         start_ms = self._now_ms()
         try:
             self.validate(task)
@@ -50,19 +63,19 @@ class BaseScraper(ABC):
             return result
 
     def validate(self, task: Task) -> None:
+        """Validate task fields before fetching. Raises ValueError on invalid input."""
         if not task.url:
             raise ValueError("task.url is required")
 
     @abstractmethod
     def fetch(self, task: Task) -> Any:
-        raise NotImplementedError
+        """Send an HTTP request for the given task and return the raw response."""
 
     @abstractmethod
     def parse(self, response: Any) -> Any:
-        raise NotImplementedError
+        """Extract structured data from the raw HTTP response."""
 
     @staticmethod
     def _now_ms() -> int:
-        import time
-
+        """Return the current time in milliseconds since epoch."""
         return int(time.time() * 1000)

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import datetime as _dt
 import json as _json
@@ -17,6 +17,11 @@ from .rate_limiter import RateLimiter
 
 
 class Web1Scraper(BaseScraper):
+    """Scraper for gmgn.ai API using curl_cffi for browser impersonation.
+
+    Supports raw cURL command parsing to replicate browser-level requests
+    and bypass basic anti-bot detection."""
+
     def __init__(
         self,
         rate_limiter: RateLimiter,
@@ -33,6 +38,9 @@ class Web1Scraper(BaseScraper):
         self._timeout = timeout
 
     def fetch(self, task: Task) -> Any:
+        """Send a request to gmgn.ai, optionally parsed from a raw cURL command.
+
+        Retries on failure using exponential backoff up to max_retries."""
         raw_curl = task.meta.get("raw_curl")
         if raw_curl:
             fields = _parse_curl_to_fields(raw_curl)
@@ -85,6 +93,9 @@ class Web1Scraper(BaseScraper):
                 _time.sleep(sleep_s)
 
     def parse(self, response: Any) -> Any:
+        """Parse the gmgn.ai JSON response and extract token data.
+
+        Handles invalid JSON, non-200 status codes, and empty data gracefully."""
         token = getattr(response, "_token", None)
         status_code = getattr(response, "status_code", None)
         try:
@@ -122,6 +133,11 @@ class Web1Scraper(BaseScraper):
 
 
 class Web2Scraper(BaseScraper):
+    """Scraper for the DexScreener public REST API.
+
+    Uses standard HTTP requests to search for token pair data
+    on decentralized exchanges."""
+
     def __init__(
         self,
         rate_limiter: RateLimiter,
@@ -138,6 +154,9 @@ class Web2Scraper(BaseScraper):
         self._timeout = timeout
 
     def fetch(self, task: Task) -> Any:
+        """Send a GET request to DexScreener search API.
+
+        Retries on failure using exponential backoff up to max_retries."""
         attempt = 0
         while True:
             attempt += 1
@@ -160,6 +179,7 @@ class Web2Scraper(BaseScraper):
                 _time.sleep(sleep_s)
 
     def parse(self, response: Any) -> Any:
+        """Parse DexScreener JSON response and extract the top trading pair data."""
         try:
             data = response.json()
         except Exception:  # noqa: BLE001
@@ -197,6 +217,7 @@ class Web2Scraper(BaseScraper):
 
 
 def _parse_cookie_str(raw: str) -> dict[str, str]:
+    """Parse a raw cookie header string into a key-value dictionary."""
     cookies: dict[str, str] = {}
     for pair in raw.split(";"):
         part = pair.strip()
@@ -208,6 +229,10 @@ def _parse_cookie_str(raw: str) -> dict[str, str]:
 
 
 def _parse_curl_to_fields(curl_cmd: str) -> dict:
+    """Convert a raw cURL command string into structured request fields.
+
+    Returns a dict with keys: METHOD, API_URL, PARAMS, HEADERS,
+    COOKIES, JSON_DATA, RAW_BODY."""
     tokens = _shlex.split(curl_cmd, posix=True)
     if not tokens or tokens[0] != "curl":
         raise ValueError("RAW_CURL must start with 'curl'.")

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import time
 from collections import deque
@@ -10,15 +10,22 @@ from .models import MetricsSnapshot, ScrapeResult
 
 
 class MetricsCollector:
+    """Thread-safe collector for runtime scraping metrics.
+
+    Records ScrapeResult events and produces aggregated MetricsSnapshot
+    objects over configurable sliding time windows."""
+
     def __init__(self) -> None:
         self._lock = Lock()
         self._events: Deque[tuple[float, ScrapeResult]] = deque(maxlen=10000)
 
     def record_result(self, result: ScrapeResult) -> None:
+        """Record a scrape result with the current timestamp."""
         with self._lock:
             self._events.append((time.time(), result))
 
     def snapshot(self, window_secs: int) -> MetricsSnapshot:
+        """Return aggregated metrics for events within the last window_secs seconds."""
         now = time.time()
         cutoff = now - window_secs
         with self._lock:
@@ -46,10 +53,12 @@ class MetricsCollector:
         )
 
     def export_json(self) -> List[Dict]:
+        """Export all recorded events as a list of dictionaries."""
         with self._lock:
             return [{"timestamp": ts, **asdict(e)} for ts, e in self._events]
 
     def export_csv_rows(self) -> Iterable[Dict]:
+        """Yield recorded events as flat dictionaries suitable for CSV export."""
         with self._lock:
             for ts, e in self._events:
                 yield {"timestamp": ts, **asdict(e)}

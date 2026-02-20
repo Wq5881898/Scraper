@@ -1,23 +1,34 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import queue
 import threading
 import time
+from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
 from .models import ScrapeResult
 
 
-class StorageBase:
-    def write(self, result: ScrapeResult) -> None:
-        raise NotImplementedError
+class StorageBase(ABC):
+    """Abstract base class for all storage backends.
 
+    Subclasses must implement write() and close() to handle
+    persistence of scraping results.
+    """
+
+    @abstractmethod
+    def write(self, result: ScrapeResult) -> None:
+        """Persist a single scrape result."""
+
+    @abstractmethod
     def close(self) -> None:
-        raise NotImplementedError
+        """Flush pending writes and release resources."""
 
 
 class JsonlStorage(StorageBase):
+    """Stores scrape results as JSON Lines (.jsonl) using a background writer thread."""
+
     def __init__(self, path: str) -> None:
         self._path = path
         self._queue: queue.Queue[Optional[ScrapeResult]] = queue.Queue()
@@ -25,9 +36,11 @@ class JsonlStorage(StorageBase):
         self._thread.start()
 
     def write(self, result: ScrapeResult) -> None:
+        """Enqueue a scrape result for background writing."""
         self._queue.put(result)
 
     def close(self) -> None:
+        """Signal the writer thread to flush and stop."""
         self._queue.put(None)
         self._thread.join(timeout=5)
 

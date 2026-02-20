@@ -1,0 +1,18 @@
+curl 'https://gmgn.ai/api/v1/mutil_window_token_info?device_id=2f7a7a39-6426-4218-b88e-9e3db3545b81&fp_did=058a0c07a7afecfc9ddc2d333226a0ff&client_id=gmgn_web_20260218-11075-5093a13&from_app=gmgn&app_ver=20260218-11075-5093a13&tz_name=America%2FDenver&tz_offset=-25200&app_lang=zh-CN&os=web&worker=0' \
+  -H 'accept: application/json, text/plain, */*' \
+  -H 'accept-language: zh-CN,zh;q=0.9,en;q=0.8' \
+  -H 'baggage: sentry-environment=production,sentry-release=20260218-11075-5093a13,sentry-public_key=93c25bab7246077dc3eb85b59d6e7d40,sentry-trace_id=72e4f1f9041340e29c29f7126acc38b9,sentry-org_id=4505147559706624,sentry-transaction=%2F%5Bchain%5D%2Ftoken%2F%5Btoken%5D,sentry-sampled=false,sentry-sample_rand=0.7617325227269099,sentry-sample_rate=0.01' \
+  -H 'content-type: application/json' \
+  -b '_ga=GA1.1.1233147309.1769553624; __cf_bm=93fcEaVKu0mW51iu.8NikuZbvsbpo12Ljo3l2Zaf5tc-1771479541-1.0.1.1-qYFbwR3ogpM79LBG6tgJlew4aCOG5uLTBZQXRJR20RKNh6kHZgTgiEOE4wCbXVQ8QcXeUyTiDT0xekbjqBYWtavcDS2AVCt4ANXx1VU6z2s; _ga_0XM0LYXGC8=GS2.1.s1771479754$o13$g0$t1771479754$j60$l0$h0' \
+  -H 'origin: https://gmgn.ai' \
+  -H 'priority: u=1, i' \
+  -H 'referer: https://gmgn.ai/bsc/token/0x783c3f003f172c6ac5ac700218a357d2d66ee2a2' \
+  -H 'sec-ch-ua: "Not(A:Brand";v="8", "Chromium";v="144", "Google Chrome";v="144"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "Windows"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-origin' \
+  -H 'sentry-trace: 72e4f1f9041340e29c29f7126acc38b9-aadf8a64f049464b-0' \
+  -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36' \
+  --data-raw '{"chain":"bsc","addresses":["0x783c3f003f172c6ac5ac700218a357d2d66ee2a2"]}'

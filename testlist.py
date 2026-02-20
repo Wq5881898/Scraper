@@ -1,11 +1,11 @@
-﻿import requests
+import requests
 
 url = "https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/cex/alpha/all/token/list"
 
 resp = requests.get(url)
 data = resp.json()
 
-# 提取 contractAddress 列表
+# Extract contractAddress list from Binance API response
 contract_list = [
     item["contractAddress"]
     for item in data["data"]

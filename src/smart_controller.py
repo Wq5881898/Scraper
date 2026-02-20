@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import time
@@ -11,6 +11,11 @@ from .controller import ThreadPoolController
 
 
 class SmartController:
+    """Periodically evaluates runtime metrics and applies adaptive control strategies.
+
+    Runs in a background thread and adjusts system behaviour (e.g. concurrency)
+    based on aggregated metrics over a sliding time window."""
+
     def __init__(
         self,
         metrics: MetricsCollector,
@@ -27,6 +32,7 @@ class SmartController:
         self._running = False
 
     def start(self) -> None:
+        """Begin the periodic evaluation loop (blocking; run in a daemon thread)."""
         self._running = True
         while self._running:
             snapshot = self._metrics.snapshot(self._window_secs)
@@ -34,9 +40,11 @@ class SmartController:
             time.sleep(self._eval_interval)
 
     def stop(self) -> None:
+        """Signal the evaluation loop to stop after the current cycle."""
         self._running = False
 
     def _apply_strategies(self, snapshot: MetricsSnapshot) -> None:
+        """Evaluate each strategy in priority order and apply the first matching one."""
         for strat in self._strategies:
             if strat.should_apply(snapshot):
                 old_limit = self._controller.limit

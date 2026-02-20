@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Optional
 
 @dataclass(frozen=True)
 class Task:
+    """Represents a single scraping task to be executed by a scraper."""
+
     task_id: str
     source_id: str
     url: str
@@ -15,6 +17,8 @@ class Task:
 
 @dataclass(frozen=True)
 class ScrapeResult:
+    """Holds the outcome of a single scraping task execution."""
+
     task_id: str
     source_id: str
     url: str
@@ -27,6 +31,8 @@ class ScrapeResult:
 
 @dataclass(frozen=True)
 class MetricsSnapshot:
+    """Aggregated runtime metrics over a sliding time window."""
+
     window_secs: int
     total_requests: int
     success_count: int

@@ -1,11 +1,12 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Iterable, Dict
 
 
 def plot_metrics(rows: Iterable[Dict], output_path: str) -> None:
-    """Generate plots for error rate / concurrency changes over time.
+    """Placeholder module for metrics visualization.
 
-    Placeholder: implement with matplotlib or similar.
+    Will be implemented in a future phase using matplotlib or similar
+    to generate performance charts from collected metrics data.
     """
     raise NotImplementedError
