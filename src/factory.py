@@ -11,10 +11,8 @@ from .scrapers import Web1Scraper, Web2Scraper
 class ScraperFactory:
     """Factory for creating scraper instances based on task configuration.
 
-    NOTE: Keep behaviour stable.
-    - No caching.
-    - Each task creates a scraper instance just like your original design.
-    """
+    Encapsulates creation logic so that the scheduler does not need
+    to know which concrete scraper class to instantiate."""
 
     def __init__(
         self,
