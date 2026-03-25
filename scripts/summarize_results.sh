@@ -22,6 +22,16 @@ TOTAL=$(grep -c "source_id" "$RESULTS_FILE")
 echo "Total records : $TOTAL"
 echo ""
 
+extract_latency_values() {
+    local lines="$1"
+    local values
+    values=$(echo "$lines" | grep -o '"latency_ms": *[0-9]*')
+    if [ -z "$values" ]; then
+        values=$(echo "$lines" | grep -o '"latency": *[0-9]*' | sed 's/"latency": */"latency_ms": /')
+    fi
+    echo "$values"
+}
+
 # Per-source breakdown using grep, sed, sort, and awk
 echo "--- By Source ---"
 echo ""
@@ -39,30 +49,29 @@ for SOURCE in $SOURCES; do
     COUNT=$(echo "$SOURCE_LINES" | grep -c "source_id")
 
     # Count successes (success: true)
-    SUCCESS_COUNT=$(echo "$SOURCE_LINES" | grep -c '"success": *true')
+    SUCCESS_COUNT=$(echo "$SOURCE_LINES" | grep -Ec '"success": *true|"status": *true')
 
     # Count failures (success: false)
-    FAIL_COUNT=$(echo "$SOURCE_LINES" | grep -c '"success": *false')
+    FAIL_COUNT=$(echo "$SOURCE_LINES" | grep -Ec '"success": *false|"status": *false')
+
+    LATENCY_VALUES=$(extract_latency_values "$SOURCE_LINES")
 
     # Calculate success rate using awk
     SUCCESS_RATE=$(awk -v s="$SUCCESS_COUNT" -v t="$COUNT" \
         'BEGIN { if (t > 0) printf "%.1f", (s / t) * 100; else print "N/A" }')
 
     # Extract latency values and compute average using grep, sed, and awk
-    AVG_LATENCY=$(echo "$SOURCE_LINES" \
-        | grep -o '"latency_ms": *[0-9]*' \
+    AVG_LATENCY=$(echo "$LATENCY_VALUES" \
         | sed 's/"latency_ms": *//' \
         | awk '{ sum += $1; count++ } END { if (count > 0) printf "%.1f", sum / count; else print "N/A" }')
 
     # Extract min/max latency using sort and awk
-    MIN_LATENCY=$(echo "$SOURCE_LINES" \
-        | grep -o '"latency_ms": *[0-9]*' \
+    MIN_LATENCY=$(echo "$LATENCY_VALUES" \
         | sed 's/"latency_ms": *//' \
         | sort -n \
         | awk 'NR==1 { print }')
 
-    MAX_LATENCY=$(echo "$SOURCE_LINES" \
-        | grep -o '"latency_ms": *[0-9]*' \
+    MAX_LATENCY=$(echo "$LATENCY_VALUES" \
         | sed 's/"latency_ms": *//' \
         | sort -n \
         | awk 'END { print }')
@@ -79,8 +88,8 @@ done
 echo "========================================"
 
 # Overall success rate across all sources using awk
-TOTAL_SUCCESS=$(grep -c '"success": *true' "$RESULTS_FILE")
-TOTAL_FAIL=$(grep -c '"success": *false' "$RESULTS_FILE")
+TOTAL_SUCCESS=$(grep -Ec '"success": *true|"status": *true' "$RESULTS_FILE")
+TOTAL_FAIL=$(grep -Ec '"success": *false|"status": *false' "$RESULTS_FILE")
 OVERALL_RATE=$(awk -v s="$TOTAL_SUCCESS" -v t="$TOTAL" \
     'BEGIN { if (t > 0) printf "%.1f", (s / t) * 100; else print "N/A" }')
 

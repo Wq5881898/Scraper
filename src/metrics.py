@@ -9,6 +9,21 @@ from typing import Deque, Dict, Iterable, List, Optional
 from .models import MetricsSnapshot, ScrapeResult
 
 
+def _is_timeout(error_type: Optional[str]) -> bool:
+    if not error_type:
+        return False
+    return "timeout" in error_type.lower()
+
+
+def _is_connection_error(error_type: Optional[str]) -> bool:
+    if not error_type:
+        return False
+    lowered = error_type.lower()
+    if "timeout" in lowered:
+        return False
+    return "connection" in lowered or lowered.startswith("connect")
+
+
 class MetricsCollector:
     """Thread-safe collector for runtime scraping metrics.
 
@@ -32,8 +47,8 @@ class MetricsCollector:
             events: List[ScrapeResult] = [e for ts, e in self._events if ts >= cutoff]
         total = len(events)
         success_count = sum(1 for e in events if e.success)
-        timeout_count = sum(1 for e in events if e.error_type == "Timeout")
-        conn_error_count = sum(1 for e in events if e.error_type == "ConnectionError")
+        timeout_count = sum(1 for e in events if _is_timeout(e.error_type))
+        conn_error_count = sum(1 for e in events if _is_connection_error(e.error_type))
         http_429_count = sum(1 for e in events if e.status_code == 429)
         http_403_count = sum(1 for e in events if e.status_code == 403)
         ip_ban_suspected_count = 1 if http_403_count >= 3 else 0
@@ -60,5 +75,6 @@ class MetricsCollector:
     def export_csv_rows(self) -> Iterable[Dict]:
         """Yield recorded events as flat dictionaries suitable for CSV export."""
         with self._lock:
-            for ts, e in self._events:
-                yield {"timestamp": ts, **asdict(e)}
+            rows = [{"timestamp": ts, **asdict(e)} for ts, e in self._events]
+        for row in rows:
+            yield row

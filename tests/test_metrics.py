@@ -55,6 +55,16 @@ class TestMetricsCollector(unittest.TestCase):
         self.assertEqual(snap.timeout_count, 1)
         self.assertEqual(snap.conn_error_count, 1)
 
+    def test_records_timeout_and_connection_variants(self):
+        """Timeout/connection variants should still be classified correctly."""
+        metrics = MetricsCollector()
+        metrics.record_result(_make_result(success=False, status_code=None, error_type="ReadTimeout"))
+        metrics.record_result(_make_result(success=False, status_code=None, error_type="ConnectTimeout"))
+        metrics.record_result(_make_result(success=False, status_code=None, error_type="ConnectError"))
+        snap = metrics.snapshot(window_secs=30)
+        self.assertEqual(snap.timeout_count, 2)
+        self.assertEqual(snap.conn_error_count, 1)
+
     def test_ip_ban_detection(self):
         """Three or more HTTP 403 responses should flag an IP ban suspicion."""
         metrics = MetricsCollector()
