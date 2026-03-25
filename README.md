@@ -30,6 +30,24 @@ This will scrape token data from gmgn.ai and DexScreener using addresses loaded 
 python -m unittest discover -s tests -v
 ```
 
+Or use the automation script, which also writes a timestamped log to `logs/`:
+
+```bash
+bash scripts/run_tests.sh
+```
+
+The log is saved to `logs/test_run_<timestamp>.log` and a compact summary is printed at the end.
+
+## Summarizing Scrape Results
+
+After running the scraper, summarize `results.jsonl` by source, success rate, and average latency:
+
+```bash
+bash scripts/summarize_results.sh results.jsonl
+```
+
+Pass a different file path as the argument if your output is stored elsewhere. The script prints per-source and overall breakdowns.
+
 ## Generating the Test Address List
 
 To refresh the token address list from Binance:
