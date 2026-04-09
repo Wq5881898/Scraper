@@ -16,8 +16,9 @@ from src.strategies import ChangeProxyStrategy, IncreaseConcurrencyStrategy, Red
 from src.models import Task
 
 
-DEFAULT_CURL_CONFIG_PATH = "curl_config.txt"
-DEFAULT_ADDRESS_LIST_PATH = "testlist.txt"
+DEFAULT_CURL_CONFIG_PATH = "config/curl_config.txt"
+DEFAULT_ADDRESS_LIST_PATH = "config/testlist.txt"
+DEFAULT_RESULTS_PATH = "testdata/results.jsonl"
 
 
 def _load_curl_config(path: str) -> str:
@@ -139,7 +140,7 @@ def main() -> None:
 
     parser.add_argument("--addresses", default=DEFAULT_ADDRESS_LIST_PATH, help="Path to test address list")
     parser.add_argument("--curl-config", default=DEFAULT_CURL_CONFIG_PATH, help="Path to curl config")
-    parser.add_argument("--results", default="results.jsonl", help="Output JSONL file")
+    parser.add_argument("--results", default=DEFAULT_RESULTS_PATH, help="Output JSONL file")
 
     parser.add_argument("--qps", type=float, default=2.0, help="Global QPS limit")
     parser.add_argument("--max-workers", type=int, default=8, help="ThreadPoolExecutor max workers")

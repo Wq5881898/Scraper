@@ -10,7 +10,7 @@ from flask import Flask, jsonify, request
 from src.results_reader import read_recent_records, summarize_results
 
 
-def create_app(default_results_path: str = "results.jsonl") -> Flask:
+def create_app(default_results_path: str = "testdata/results.jsonl") -> Flask:
     app = Flask(__name__)
     app.config["SWAGGER"] = {
         "title": "Scraper API",
@@ -66,7 +66,7 @@ def create_app(default_results_path: str = "results.jsonl") -> Flask:
             in: query
             required: false
             type: string
-            description: JSONL file path. Defaults to results.jsonl.
+            description: JSONL file path. Defaults to testdata/results.jsonl.
         responses:
           200:
             description: Summary computed.
@@ -90,7 +90,7 @@ def create_app(default_results_path: str = "results.jsonl") -> Flask:
             in: query
             required: false
             type: string
-            description: JSONL file path. Defaults to results.jsonl.
+            description: JSONL file path. Defaults to testdata/results.jsonl.
           - name: limit
             in: query
             required: false
@@ -123,7 +123,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="127.0.0.1", help="Host to bind")
     parser.add_argument("--port", type=int, default=8000, help="Port to bind")
-    parser.add_argument("--results", default="results.jsonl", help="Default JSONL results file path")
+    parser.add_argument("--results", default="testdata/results.jsonl", help="Default JSONL results file path")
     args = parser.parse_args()
 
     app = create_app(default_results_path=args.results)

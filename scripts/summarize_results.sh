@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # Script 2: summarize_results.sh
-# Purpose: Summarizes a results.jsonl file by source, success rate, and average latency.
+# Purpose: Summarizes a JSONL result file by source, success rate, and average latency.
 # Key features: variables, pipes, grep, sed, sort, awk
-# Usage: bash scripts/summarize_results.sh results.jsonl
+# Usage: bash scripts/summarize_results.sh testdata/results.jsonl
 
 # --- Variables ---
-RESULTS_FILE="${1:-results.jsonl}"
+RESULTS_FILE="${1:-testdata/results.jsonl}"
 
 if [ ! -f "$RESULTS_FILE" ]; then
     echo "Error: File not found: $RESULTS_FILE"
-    echo "Usage: bash scripts/summarize_results.sh <results.jsonl>"
+    echo "Usage: bash scripts/summarize_results.sh <testdata/results.jsonl>"
     exit 1
 fi
 

@@ -22,7 +22,7 @@ Make sure the virtual environment is activated, then run:
 python main.py --run-demo
 ```
 
-This will scrape token data from gmgn.ai and DexScreener using addresses loaded from `testlist.txt`, with adaptive concurrency managed by the SmartController. Results are saved to `results.jsonl`.
+This will scrape token data from gmgn.ai and DexScreener using addresses loaded from `config/testlist.txt`, with adaptive concurrency managed by the SmartController. Results are saved to `testdata/results.jsonl`.
 
 ## Running Tests
 
@@ -40,10 +40,10 @@ The log is saved to `logs/test_run_<timestamp>.log` and a compact summary is pri
 
 ## Summarizing Scrape Results
 
-After running the scraper, summarize `results.jsonl` by source, success rate, and average latency:
+After running the scraper, summarize `testdata/results.jsonl` by source, success rate, and average latency:
 
 ```bash
-bash scripts/summarize_results.sh results.jsonl
+bash scripts/summarize_results.sh testdata/results.jsonl
 ```
 
 Pass a different file path as the argument if your output is stored elsewhere. The script prints per-source and overall breakdowns.
@@ -66,7 +66,7 @@ You can also upload any JSONL output directly from the page.
 The project now includes a lightweight Flask API with Swagger 2 docs (via `flasgger`):
 
 ```bash
-python api_server.py --host 127.0.0.1 --port 8000 --results results.jsonl
+python api_server.py --host 127.0.0.1 --port 8000 --results testdata/results.jsonl
 ```
 
 Then open:
@@ -83,4 +83,4 @@ To refresh the token address list from Binance:
 python testlist.py
 ```
 
-This writes up to 100 BSC contract addresses to `testlist.txt`.
+This writes up to 100 BSC contract addresses to `config/testlist.txt`.
