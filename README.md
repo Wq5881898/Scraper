@@ -48,6 +48,33 @@ bash scripts/summarize_results.sh results.jsonl
 
 Pass a different file path as the argument if your output is stored elsewhere. The script prints per-source and overall breakdowns.
 
+## React Visualization Dashboard
+
+A React dashboard is available under `dashboard/` for visual inspection of scraper runs.
+
+```bash
+cd dashboard
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173` and the UI will load `dashboard/public/results.jsonl` by default.  
+You can also upload any JSONL output directly from the page.
+
+## Swagger 2 API
+
+The project now includes a lightweight Flask API with Swagger 2 docs (via `flasgger`):
+
+```bash
+python api_server.py --host 127.0.0.1 --port 8000 --results results.jsonl
+```
+
+Then open:
+
+- `http://127.0.0.1:8000/apidocs/` for Swagger UI
+- `http://127.0.0.1:8000/summary` for aggregated stats
+- `http://127.0.0.1:8000/records?limit=20` for latest rows
+
 ## Generating the Test Address List
 
 To refresh the token address list from Binance:

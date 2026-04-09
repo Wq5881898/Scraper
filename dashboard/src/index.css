@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --text: #0f172a;
+  --text-muted: #475569;
+  --line: #d9e2ef;
+  --bg-a: #f8fbff;
+  --bg-b: #fdf7ec;
+  --accent-blue: #1d4ed8;
+
+  font-family: 'Sora', sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--text);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 14% 12%, rgb(186 230 253 / 55%), transparent 28%),
+    radial-gradient(circle at 85% 90%, rgb(254 240 138 / 42%), transparent 30%),
+    linear-gradient(170deg, var(--bg-a), var(--bg-b));
+}
+
+#root {
+  min-height: 100vh;
+}
