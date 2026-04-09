@@ -91,6 +91,10 @@ class Web1Scraper(BaseScraper):
                     raise
                 sleep_s = self._backoff.get_sleep(attempt, type(exc).__name__)
                 _time.sleep(sleep_s)
+            finally:
+                close_fn = getattr(session, "close", None)
+                if callable(close_fn):
+                    close_fn()
 
     def parse(self, response: Any) -> Any:
         """Parse the gmgn.ai JSON response and extract token data.
