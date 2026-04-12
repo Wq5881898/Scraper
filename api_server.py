@@ -14,7 +14,14 @@ from main import (
     DEFAULT_RESULTS_PATH,
     run_demo,
 )
-from src.results_reader import read_recent_records, summarize_results
+from src.results_reader import (
+    iter_normalized_results,
+    iter_results,
+    normalized_output_path,
+    read_recent_records,
+    summarize_results,
+    write_normalized_results,
+)
 
 
 def create_app(default_results_path: str = DEFAULT_RESULTS_PATH) -> Flask:
@@ -68,6 +75,23 @@ def create_app(default_results_path: str = DEFAULT_RESULTS_PATH) -> Flask:
             raise ValueError(f"{field_name} must be at least 1.")
         return parsed
 
+    def _normalize_source_selection(value: Any) -> list[str]:
+        # Added by Qi: validate selectable scraper sources so the Run Page can scale to web1, web2, web3, and beyond.
+        allowed_sources = {"web1", "web2"}
+        if value is None:
+            return ["web1", "web2"]
+        if not isinstance(value, list):
+            raise ValueError("selected_sources must be a list.")
+
+        cleaned = [str(item).strip() for item in value if str(item).strip()]
+        if not cleaned:
+            raise ValueError("At least one source must be selected.")
+
+        invalid_sources = [item for item in cleaned if item not in allowed_sources]
+        if invalid_sources:
+            raise ValueError(f"Unknown source selection: {', '.join(invalid_sources)}")
+        return cleaned
+
     def _normalize_run_payload(payload: dict[str, Any]) -> dict[str, Any]:
         # Added by Qi: normalize and validate frontend Run Page payload into the exact run_demo() arguments.
         addresses = str(payload.get("addresses", DEFAULT_ADDRESS_LIST_PATH)).strip()
@@ -89,6 +113,7 @@ def create_app(default_results_path: str = DEFAULT_RESULTS_PATH) -> Flask:
             "max_workers": _to_positive_int(payload.get("max_workers", 8), "max_workers"),
             "initial_limit": _to_positive_int(payload.get("initial_limit", 3), "initial_limit"),
             "limit": _to_positive_int(payload.get("limit", 100), "limit"),
+            "selected_sources": _normalize_source_selection(payload.get("selected_sources")),
         }
 
     @app.after_request
@@ -180,6 +205,77 @@ def create_app(default_results_path: str = DEFAULT_RESULTS_PATH) -> Flask:
 
         return jsonify(read_recent_records(path, limit=limit))
 
+    @app.get("/normalized-records")
+    def normalized_records() -> Any:
+        """
+        Return cleaned and standardized records for cross-source comparison.
+        Edited by Qi: this endpoint maps web1 and web2 results into the same field structure.
+        ---
+        tags:
+          - Results
+        parameters:
+          - name: path
+            in: query
+            required: false
+            type: string
+            description: JSONL file path. Defaults to testdata/results.jsonl.
+        responses:
+          200:
+            description: Normalized records returned.
+          404:
+            description: File does not exist.
+        """
+        path = _resolve_path()
+        if not os.path.exists(path):
+            return jsonify({"error": f"File not found: {path}"}), 404
+
+        normalized_rows, invalid_lines = iter_normalized_results(path)
+        return jsonify(
+            {
+                "path": path,
+                "normalized_results_path": normalized_output_path(path),
+                "invalid_lines": invalid_lines,
+                "records": normalized_rows,
+            }
+        )
+
+    @app.post("/normalize-results")
+    def normalize_results_api() -> Any:
+        """
+        Create a cleaned JSONL file from an existing scraper results file.
+        Edited by Qi: this API writes normalized records to disk for later review and comparison.
+        ---
+        tags:
+          - Results
+        parameters:
+          - in: body
+            name: body
+            required: false
+            schema:
+              type: object
+              properties:
+                path:
+                  type: string
+                  example: testdata/results.jsonl
+                output_path:
+                  type: string
+                  example: testdata/results.normalized.jsonl
+        responses:
+          200:
+            description: Normalized JSONL file written successfully.
+          404:
+            description: Source file does not exist.
+        """
+        payload = request.get_json(silent=True) or {}
+        path = str(payload.get("path") or default_results_path).strip()
+        output_path = str(payload.get("output_path") or normalized_output_path(path)).strip()
+
+        if not os.path.exists(path):
+            return jsonify({"error": f"File not found: {path}"}), 404
+
+        result = write_normalized_results(path, output_path=output_path)
+        return jsonify(result)
+
     @app.route("/api/run-demo", methods=["POST", "OPTIONS"])
     def run_demo_api() -> Any:
         """
@@ -216,6 +312,11 @@ def create_app(default_results_path: str = DEFAULT_RESULTS_PATH) -> Flask:
                 limit:
                   type: integer
                   example: 100
+                selected_sources:
+                  type: array
+                  items:
+                    type: string
+                  example: ["web1", "web2"]
         responses:
           200:
             description: Scraper run finished and preview data returned.
@@ -249,6 +350,7 @@ def create_app(default_results_path: str = DEFAULT_RESULTS_PATH) -> Flask:
                 max_workers=config["max_workers"],
                 initial_limit=config["initial_limit"],
                 limit=config["limit"],
+                selected_sources=config["selected_sources"],
             )
         except FileNotFoundError as exc:
             return _json_error(str(exc), 404)
@@ -258,16 +360,20 @@ def create_app(default_results_path: str = DEFAULT_RESULTS_PATH) -> Flask:
             return _json_error(f"Run failed: {exc}", 500)
 
         summary_data = summarize_results(config["results"])
-        recent_data = read_recent_records(config["results"], limit=50)
+        all_records, invalid_lines = iter_results(config["results"])
+        normalized_records, _ = iter_normalized_results(config["results"])
+        normalized_write_result = write_normalized_results(config["results"])
 
         return jsonify(
             {
                 "status": "success",
                 "message": "Run completed successfully.",
                 "results_path": config["results"],
+                "normalized_results_path": normalized_write_result["output_path"],
                 "summary": summary_data,
-                "records": recent_data["records"],
-                "invalid_lines": recent_data["invalid_lines"],
+                "records": all_records,
+                "normalized_records": normalized_records,
+                "invalid_lines": invalid_lines,
             }
         )
 

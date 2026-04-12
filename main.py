@@ -45,14 +45,20 @@ def _load_addresses(path: str, limit: int = 100) -> list[str]:
     return addresses
 
 
-def _build_tasks(address_list_path: str, curl_config_path: str, limit: int) -> list[Task]:
+def _build_tasks(
+    address_list_path: str,
+    curl_config_path: str,
+    limit: int,
+    selected_sources: list[str] | None = None,
+) -> list[Task]:
     tasks: list[Task] = []
     addresses = _load_addresses(address_list_path, limit=limit)
+    enabled_sources = set(selected_sources or ["web1", "web2"])
 
     # Web1 (gmgn) - keep same behaviour: only create web1 tasks if raw_curl exists
     gmgn_url = "https://gmgn.ai/api/v1/mutil_window_token_info"
     raw_curl = _load_curl_config(curl_config_path)
-    if raw_curl:
+    if "web1" in enabled_sources and raw_curl:
         for addr in addresses:
             tasks.append(
                 Task(
@@ -70,16 +76,17 @@ def _build_tasks(address_list_path: str, curl_config_path: str, limit: int) -> l
 
     # Web2 (dexscreener) - same as original
     dexscreener_url = "https://api.dexscreener.com/latest/dex/search/"
-    for addr in addresses:
-        tasks.append(
-            Task(
-                task_id=str(uuid.uuid4()),
-                source_id="web2",
-                url=dexscreener_url,
-                params={"q": addr},
-                meta={},
+    if "web2" in enabled_sources:
+        for addr in addresses:
+            tasks.append(
+                Task(
+                    task_id=str(uuid.uuid4()),
+                    source_id="web2",
+                    url=dexscreener_url,
+                    params={"q": addr},
+                    meta={},
+                )
             )
-        )
 
     return tasks
 
@@ -92,6 +99,7 @@ def run_demo(
     max_workers: int,
     initial_limit: int,
     limit: int,
+    selected_sources: list[str] | None = None,
 ) -> None:
     metrics = MetricsCollector()
     rate_limiter = RateLimiter(qps=qps)
@@ -115,7 +123,12 @@ def run_demo(
     smart_thread = threading.Thread(target=smart.start, daemon=True)
     smart_thread.start()
 
-    tasks = _build_tasks(address_list_path, curl_config_path, limit=limit)
+    tasks = _build_tasks(
+        address_list_path,
+        curl_config_path,
+        limit=limit,
+        selected_sources=selected_sources,
+    )
     futures = []
     for task in tasks:
         scraper = factory.create_scraper(task)

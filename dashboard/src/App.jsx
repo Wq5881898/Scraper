@@ -19,6 +19,10 @@ const statusPalette = ['#0f766e', '#0891b2', '#f59e0b', '#ea580c', '#dc2626']
 const tokenPalette = ['#1d4ed8', '#0f766e', '#b45309', '#be123c', '#1e3a8a', '#14532d']
 const numberFormatter = new Intl.NumberFormat('en-US')
 const decimalFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
+const preciseDecimalFormatter = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 5,
+  maximumFractionDigits: 5,
+})
 const moneyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -26,6 +30,7 @@ const moneyFormatter = new Intl.NumberFormat('en-US', {
 })
 
 const defaultForm = {
+  selected_sources: ['web1', 'web2'],
   addresses: 'config/testlist.txt',
   curl_config: 'config/curl_config.txt',
   results: 'testdata/results.jsonl',
@@ -39,8 +44,12 @@ const pageSize = 10
 const navItems = [
   { id: 'run', label: 'Run' },
   { id: 'dashboard', label: 'Dashboard' },
-  { id: 'analytics', label: 'Analytics', disabled: true },
-  { id: 'reports', label: 'Reports', disabled: true },
+  { id: 'analytics', label: 'Analytics1' },
+  { id: 'analytics2', label: 'Analytics2' },
+]
+const sourceOptions = [
+  { id: 'web1', label: 'Web1' },
+  { id: 'web2', label: 'Web2' },
 ]
 
 function coerceNumber(value) {
@@ -115,10 +124,27 @@ function parseEntry(entry, index) {
     statusCode: String(statusCode || 'unknown'),
     success,
     tokenName: parseTokenName(token, index),
+    priceUsd: coerceNumber(token?.price) ?? coerceNumber(tokenPrice.price),
     symbol: token?.symbol || token?.token_symbol || 'n/a',
     marketCap: coerceNumber(token?.market_cap),
+    fdv: coerceNumber(token?.fdv),
     volume24h: coerceNumber(token?.volume_h24 ?? tokenPrice.volume_24h),
     liquidity: coerceNumber(token?.liquidity_usd ?? token?.liquidity),
+    holderCount: coerceNumber(token?.holder_count),
+    circulatingSupply: coerceNumber(token?.circulating_supply),
+    totalSupply: coerceNumber(token?.total_supply),
+    maxSupply: coerceNumber(token?.max_supply),
+    price1m: coerceNumber(tokenPrice.price_1m),
+    price5m: coerceNumber(tokenPrice.price_5m),
+    price1h: coerceNumber(tokenPrice.price_1h),
+    price6h: coerceNumber(tokenPrice.price_6h),
+    price24h: coerceNumber(tokenPrice.price_24h),
+    priceChangeM1Pct: null,
+    priceChangeM5Pct: null,
+    priceChangeH1Pct: null,
+    priceChangeH6Pct: null,
+    priceChangeH24Pct: null,
+    createdAtUtc: token?.created_at_utc ?? null,
     errorType: entry.error_type || 'none',
   }
 }
@@ -145,7 +171,44 @@ function parseJsonl(rawText) {
 function parseApiRecords(records) {
   return (records ?? [])
     .filter((record) => record && typeof record === 'object')
-    .map((record, index) => parseEntry(record, index))
+    .map((record, index) => {
+      if ('parsed_data' in record || 'data' in record) {
+        return parseEntry(record, index)
+      }
+
+      return {
+        index: index + 1,
+        source: record.source_id ?? 'unknown-source',
+        taskId: record.task_id ?? `row-${index + 1}`,
+        timestampMs: coerceTimestamp(record.timestamp),
+        latency: coerceNumber(record.latency_ms ?? record.latency) ?? 0,
+        statusCode: String(coerceNumber(record.status_code) ?? 'unknown'),
+        success: Boolean(record.success),
+        tokenName: record.token_name || record.name || `token-${index + 1}`,
+        priceUsd: coerceNumber(record.price_usd),
+        symbol: record.symbol || 'n/a',
+        marketCap: coerceNumber(record.market_cap),
+        fdv: coerceNumber(record.fdv),
+        volume24h: coerceNumber(record.volume_h24),
+        liquidity: coerceNumber(record.liquidity_usd),
+        holderCount: coerceNumber(record.holder_count),
+        circulatingSupply: coerceNumber(record.circulating_supply),
+        totalSupply: coerceNumber(record.total_supply),
+        maxSupply: coerceNumber(record.max_supply),
+        price1m: coerceNumber(record.price_1m),
+        price5m: coerceNumber(record.price_5m),
+        price1h: coerceNumber(record.price_1h),
+        price6h: coerceNumber(record.price_6h),
+        price24h: coerceNumber(record.price_24h),
+        priceChangeM1Pct: coerceNumber(record.price_change_m1_pct),
+        priceChangeM5Pct: coerceNumber(record.price_change_m5_pct),
+        priceChangeH1Pct: coerceNumber(record.price_change_h1_pct),
+        priceChangeH6Pct: coerceNumber(record.price_change_h6_pct),
+        priceChangeH24Pct: coerceNumber(record.price_change_h24_pct),
+        createdAtUtc: record.created_at_utc || null,
+        errorType: record.error_type || 'none',
+      }
+    })
 }
 
 function formatTime(timestampMs) {
@@ -170,6 +233,19 @@ function formatDateTime(timestampMs) {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
+    hour12: false,
+  })
+}
+
+function formatMinuteTime(timestampMs) {
+  if (!timestampMs) {
+    return 'n/a'
+  }
+  return new Date(timestampMs).toLocaleString([], {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
     hour12: false,
   })
 }
@@ -200,6 +276,61 @@ function formatMoney(value) {
     return '--'
   }
   return moneyFormatter.format(value)
+}
+
+function formatPreciseNumber(value) {
+  if (value === null || value === undefined) {
+    return '--'
+  }
+  return preciseDecimalFormatter.format(value)
+}
+
+function formatCompactMoney(value) {
+  if (value === null || value === undefined) {
+    return '--'
+  }
+  const absolute = Math.abs(value)
+  if (absolute >= 1_000_000_000) {
+    return `$${decimalFormatter.format(value / 1_000_000_000)}B`
+  }
+  if (absolute >= 1_000_000) {
+    return `$${decimalFormatter.format(value / 1_000_000)}M`
+  }
+  if (absolute >= 1_000) {
+    return `$${decimalFormatter.format(value / 1_000)}K`
+  }
+  return moneyFormatter.format(value)
+}
+
+function formatComparisonValue(value, type = 'text') {
+  if (value === null || value === undefined || value === '') {
+    return '--'
+  }
+  if (type === 'money') {
+    return formatCompactMoney(value)
+  }
+  if (type === 'number') {
+    return decimalFormatter.format(value)
+  }
+  if (type === 'percent') {
+    return formatPercent(value)
+  }
+  if (type === 'datetime') {
+    return value
+  }
+  if (typeof value === 'boolean') {
+    return value ? 'Yes' : 'No'
+  }
+  return String(value)
+}
+
+function areDifferent(left, right) {
+  const leftEmpty = left === null || left === undefined || left === ''
+  const rightEmpty = right === null || right === undefined || right === ''
+  if (leftEmpty && rightEmpty) {
+    return false
+  }
+  return left !== right
 }
 
 function buildSourceData(rows) {
@@ -251,6 +382,40 @@ function buildTopTokenData(rows) {
     }))
 }
 
+function buildMetricTimeline(rows, selectedToken, valueKey) {
+  return [...rows]
+    .filter((row) => row.tokenName === selectedToken)
+    .sort((a, b) => (a.timestampMs ?? 0) - (b.timestampMs ?? 0))
+    .map((row, index) => ({
+      index: index + 1,
+      time: formatMinuteTime(row.timestampMs),
+      fullTime: formatDateTime(row.timestampMs),
+      web1: row.source === 'web1' ? row[valueKey] ?? null : null,
+      web2: row.source === 'web2' ? row[valueKey] ?? null : null,
+    }))
+}
+
+function buildYAxisDomain(data, keys) {
+  const values = data
+    .flatMap((item) => keys.map((key) => item[key]))
+    .filter((value) => typeof value === 'number' && Number.isFinite(value))
+
+  if (!values.length) {
+    return ['auto', 'auto']
+  }
+
+  const min = Math.min(...values)
+  const max = Math.max(...values)
+
+  if (min === max) {
+    const padding = Math.max(Math.abs(min) * 0.05, 1)
+    return [min - padding, max + padding]
+  }
+
+  const padding = Math.max((max - min) * 0.08, 1)
+  return [min - padding, max + padding]
+}
+
 function StatCard({ label, value, hint }) {
   return (
     <article className="panel stat-card">
@@ -258,6 +423,235 @@ function StatCard({ label, value, hint }) {
       <p className="stat-value">{value}</p>
       <p className="stat-hint">{hint}</p>
     </article>
+  )
+}
+
+function AnalyticsPage({ rows }) {
+  const tokenOptions = useMemo(() => {
+    return [...new Set(rows.map((row) => row.tokenName).filter(Boolean))].sort((a, b) => a.localeCompare(b))
+  }, [rows])
+
+  const [selectedToken, setSelectedToken] = useState('')
+
+  useEffect(() => {
+    if (!tokenOptions.length) {
+      setSelectedToken('')
+      return
+    }
+    if (!selectedToken || !tokenOptions.includes(selectedToken)) {
+      setSelectedToken(tokenOptions[0])
+    }
+  }, [tokenOptions, selectedToken])
+
+  const latestBySource = useMemo(() => {
+    const tokenRows = rows.filter((row) => row.tokenName === selectedToken)
+    const pickLatest = (sourceId) =>
+      [...tokenRows]
+        .filter((row) => row.source === sourceId)
+        .sort((a, b) => (b.timestampMs ?? 0) - (a.timestampMs ?? 0))[0] ?? null
+
+    return {
+      web1: pickLatest('web1'),
+      web2: pickLatest('web2'),
+    }
+  }, [rows, selectedToken])
+
+  const comparisonFields = [
+    { key: 'tokenName', label: 'Token Name' },
+    { key: 'source', label: 'Source' },
+    { key: 'priceUsd', label: 'Price', type: 'number' },
+    { key: 'price1m', label: 'Price 1M', type: 'number' },
+    { key: 'price5m', label: 'Price 5M', type: 'number' },
+    { key: 'price1h', label: 'Price 1H', type: 'number' },
+    { key: 'price6h', label: 'Price 6H', type: 'number' },
+    { key: 'price24h', label: 'Price 24H', type: 'number' },
+    { key: 'priceChangeM1Pct', label: 'Price Change 1M', type: 'percent' },
+    { key: 'priceChangeM5Pct', label: 'Price Change 5M', type: 'percent' },
+    { key: 'priceChangeH1Pct', label: 'Price Change 1H', type: 'percent' },
+    { key: 'priceChangeH6Pct', label: 'Price Change 6H', type: 'percent' },
+    { key: 'priceChangeH24Pct', label: 'Price Change 24H', type: 'percent' },
+    { key: 'liquidity', label: 'Liquidity', type: 'money' },
+    { key: 'marketCap', label: 'Market Cap', type: 'money' },
+    { key: 'fdv', label: 'FDV', type: 'money' },
+    { key: 'volume24h', label: 'Volume 24H', type: 'money' },
+    { key: 'holderCount', label: 'Holder Count', type: 'number' },
+    { key: 'circulatingSupply', label: 'Circulating Supply', type: 'number' },
+    { key: 'totalSupply', label: 'Total Supply', type: 'number' },
+    { key: 'maxSupply', label: 'Max Supply', type: 'number' },
+    { key: 'createdAtUtc', label: 'Created At', type: 'datetime' },
+    { key: 'success', label: 'Success' },
+  ]
+
+  return (
+    <>
+      <section className="panel hero-panel">
+        <div>
+          <p className="eyebrow">Analytics1</p>
+          <h1>Cross-Source Token Comparison</h1>
+          <p className="hero-description">
+            Select one token and compare the latest normalized Web1 and Web2 records field by field. Different values are highlighted.
+          </p>
+        </div>
+        <div className="status-box">
+          <p className="status-label">Selected Token</p>
+          <select className="analytics-select" value={selectedToken} onChange={(event) => setSelectedToken(event.target.value)}>
+            {tokenOptions.length ? (
+              tokenOptions.map((token) => (
+                <option key={token} value={token}>
+                  {token}
+                </option>
+              ))
+            ) : (
+              <option value="">No token data loaded</option>
+            )}
+          </select>
+          <p className="status-message">
+            {latestBySource.web1 || latestBySource.web2 ? 'Latest records ready for comparison.' : 'No records found for this token yet.'}
+          </p>
+        </div>
+      </section>
+
+      <section className="panel preview-panel">
+        <div className="panel-head">
+          <div>
+            <p className="eyebrow">Comparison</p>
+            <h2>Latest Web1 vs Web2</h2>
+          </div>
+        </div>
+
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Field</th>
+                <th>Web1</th>
+                <th>Web2</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comparisonFields.map((field) => {
+                const left = latestBySource.web1?.[field.key] ?? null
+                const right = latestBySource.web2?.[field.key] ?? null
+                const mismatch = areDifferent(left, right)
+
+                return (
+                  <tr key={field.key} className={mismatch ? 'comparison-mismatch' : ''}>
+                    <td>{field.label}</td>
+                    <td>{formatComparisonValue(left, field.type)}</td>
+                    <td>{formatComparisonValue(right, field.type)}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </>
+  )
+}
+
+function AnalyticsTimeSeriesPage({ rows }) {
+  const tokenOptions = useMemo(() => {
+    return [...new Set(rows.map((row) => row.tokenName).filter(Boolean))].sort((a, b) => a.localeCompare(b))
+  }, [rows])
+
+  const [selectedToken, setSelectedToken] = useState('')
+
+  useEffect(() => {
+    if (!tokenOptions.length) {
+      setSelectedToken('')
+      return
+    }
+    if (!selectedToken || !tokenOptions.includes(selectedToken)) {
+      setSelectedToken(tokenOptions[0])
+    }
+  }, [tokenOptions, selectedToken])
+
+  const priceTimeline = useMemo(() => buildMetricTimeline(rows, selectedToken, 'priceUsd'), [rows, selectedToken])
+  const holderTimeline = useMemo(() => buildMetricTimeline(rows, selectedToken, 'holderCount'), [rows, selectedToken])
+  const liquidityTimeline = useMemo(() => buildMetricTimeline(rows, selectedToken, 'liquidity'), [rows, selectedToken])
+  const fdvTimeline = useMemo(() => buildMetricTimeline(rows, selectedToken, 'fdv'), [rows, selectedToken])
+
+  const charts = [
+    {
+      title: 'Price',
+      hint: 'Price trend over time',
+      data: priceTimeline,
+      formatter: (value) => formatPreciseNumber(value),
+      tickFormatter: (value) => preciseDecimalFormatter.format(value),
+    },
+    {
+      title: 'Holder Count',
+      hint: 'Holder count over time',
+      data: holderTimeline,
+      formatter: (value) => formatComparisonValue(value, 'number'),
+      yAxisDomain: buildYAxisDomain(holderTimeline, ['web1', 'web2']),
+      tickFormatter: (value) => Math.round(value),
+    },
+    { title: 'Liquidity', hint: 'Liquidity trend over time', data: liquidityTimeline, formatter: (value) => formatComparisonValue(value, 'money') },
+    { title: 'FDV', hint: 'FDV trend over time', data: fdvTimeline, formatter: (value) => formatComparisonValue(value, 'money') },
+  ]
+
+  return (
+    <>
+      <section className="panel hero-panel">
+        <div>
+          <p className="eyebrow">Analytics2</p>
+          <h1>Time-Based Token Comparison</h1>
+          <p className="hero-description">
+            Select one token and compare Web1 and Web2 across time with simple side-by-side trend lines.
+          </p>
+        </div>
+        <div className="status-box">
+          <p className="status-label">Selected Token</p>
+          <select className="analytics-select" value={selectedToken} onChange={(event) => setSelectedToken(event.target.value)}>
+            {tokenOptions.length ? (
+              tokenOptions.map((token) => (
+                <option key={token} value={token}>
+                  {token}
+                </option>
+              ))
+            ) : (
+              <option value="">No token data loaded</option>
+            )}
+          </select>
+          <p className="status-message">
+            {selectedToken ? 'The charts below compare the latest time series for the selected token.' : 'No token data loaded yet.'}
+          </p>
+        </div>
+      </section>
+
+      <section className="chart-grid analytics-grid">
+        {charts.map((chart) => (
+          <article key={chart.title} className="panel chart-card">
+            <div className="card-header">
+              <h2>{chart.title}</h2>
+              <p>{chart.hint}</p>
+            </div>
+            <div className="chart-wrap">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chart.data}>
+                  <CartesianGrid strokeDasharray="4 4" stroke="#d4d7dc" />
+                  <XAxis dataKey="time" tick={{ fontSize: 12 }} minTickGap={24} />
+                  <YAxis
+                    tick={{ fontSize: 12 }}
+                    domain={chart.yAxisDomain ?? ['auto', 'auto']}
+                    tickFormatter={(value) => (chart.tickFormatter ? chart.tickFormatter(value) : value)}
+                  />
+                  <Tooltip
+                    formatter={(value) => chart.formatter(value)}
+                    labelFormatter={(value, payload) => payload?.[0]?.payload?.fullTime || value}
+                    contentStyle={{ borderRadius: 12, border: '1px solid #d9e0ea' }}
+                  />
+                  <Line type="monotone" dataKey="web1" stroke="#1d4ed8" strokeWidth={2.5} dot={false} connectNulls />
+                  <Line type="monotone" dataKey="web2" stroke="#0f766e" strokeWidth={2.5} dot={false} connectNulls />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </article>
+        ))}
+      </section>
+    </>
   )
 }
 
@@ -288,6 +682,28 @@ function RunPage({ form, errors, onChange, onSubmit, onReset, runStatus, message
 
       <section className="panel form-panel">
         <form className="run-form" onSubmit={onSubmit}>
+          <div className="source-selector">
+            <div className="source-selector-copy">
+              <span className="field-heading">Data Sources</span>
+              <p>Select one or more scraper sources. This layout can scale later for Web3 and more sources.</p>
+            </div>
+            <div className="source-option-row">
+              {sourceOptions.map((source) => (
+                <label key={source.id} className="source-chip">
+                  <input
+                    name="selected_sources"
+                    type="checkbox"
+                    value={source.id}
+                    checked={form.selected_sources.includes(source.id)}
+                    onChange={onChange}
+                  />
+                  <span>{source.label}</span>
+                </label>
+              ))}
+            </div>
+            {errors.selected_sources ? <small className="field-error">{errors.selected_sources}</small> : null}
+          </div>
+
           <div className="field-grid">
             <label className="field">
               <span>Address List Path</span>
@@ -334,7 +750,7 @@ function RunPage({ form, errors, onChange, onSubmit, onReset, runStatus, message
 
           <div className="button-row">
             <button className="button-primary" type="submit">
-              Run Demo
+              Run Scraper
             </button>
             <button className="button-secondary" type="button" onClick={onReset}>
               Reset
@@ -359,10 +775,10 @@ function RunPage({ form, errors, onChange, onSubmit, onReset, runStatus, message
                 <th>Task ID</th>
                 <th>Source</th>
                 <th>Timestamp</th>
-                <th>Symbol</th>
+                <th>Name</th>
                 <th>Success</th>
                 <th>Status</th>
-                <th>Latency</th>
+                <th>Price</th>
                 <th>Error</th>
               </tr>
             </thead>
@@ -373,10 +789,10 @@ function RunPage({ form, errors, onChange, onSubmit, onReset, runStatus, message
                     <td>{row.taskId}</td>
                     <td>{row.source}</td>
                     <td>{formatDateTime(row.timestampMs)}</td>
-                    <td>{row.symbol}</td>
+                    <td>{row.tokenName}</td>
                     <td>{row.success ? 'Yes' : 'No'}</td>
                     <td>{row.statusCode}</td>
-                    <td>{row.latency}</td>
+                    <td>{row.priceUsd ?? '--'}</td>
                     <td>{row.errorType}</td>
                   </tr>
                 ))
@@ -634,17 +1050,30 @@ function App() {
 
   const loadBundledSample = useCallback(async () => {
     try {
-      const response = await fetch('/results.jsonl')
+      const response = await fetch('http://127.0.0.1:8000/normalized-records?path=testdata/results.jsonl')
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`)
       }
-      const text = await response.text()
-      loadDatasetText(text, 'public/results.jsonl')
+      const payload = await response.json()
+      const parsedRows = parseApiRecords(payload.records)
+      setRows(parsedRows)
+      setInvalidLines(payload.invalid_lines ?? 0)
+      setDatasetLabel(payload.normalized_results_path || 'testdata/results.normalized.jsonl')
+      setErrorText(parsedRows.length ? '' : 'No valid normalized records were found.')
     } catch {
-      setRows([])
-      setInvalidLines(0)
-      setDatasetLabel('No bundled sample detected')
-      setErrorText('Put a JSONL file in dashboard/public/results.jsonl or upload one from your machine.')
+      try {
+        const response = await fetch('/results.jsonl')
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`)
+        }
+        const text = await response.text()
+        loadDatasetText(text, 'public/results.jsonl')
+      } catch {
+        setRows([])
+        setInvalidLines(0)
+        setDatasetLabel('No bundled sample detected')
+        setErrorText('Start api_server.py for normalized data, or put a JSONL file in dashboard/public/results.jsonl, or upload one from your machine.')
+      }
     }
   }, [loadDatasetText])
 
@@ -704,8 +1133,16 @@ function App() {
   const slowestRows = useMemo(() => [...rows].sort((a, b) => b.latency - a.latency).slice(0, 10), [rows])
 
   function handleChange(event) {
-    const { name, value } = event.target
-    setForm((prev) => ({ ...prev, [name]: value }))
+    const { name, value, type, checked } = event.target
+    setForm((prev) => {
+      if (name === 'selected_sources' && type === 'checkbox') {
+        const nextSelected = checked
+          ? [...prev.selected_sources, value]
+          : prev.selected_sources.filter((item) => item !== value)
+        return { ...prev, selected_sources: nextSelected }
+      }
+      return { ...prev, [name]: value }
+    })
     setErrors((prev) => {
       if (!prev[name]) {
         return prev
@@ -719,6 +1156,7 @@ function App() {
   function validateForm() {
     const nextErrors = {}
 
+    if (!form.selected_sources.length) nextErrors.selected_sources = 'Select at least one source.'
     if (!form.addresses.trim()) nextErrors.addresses = 'Address list path is required.'
     if (!form.curl_config.trim()) nextErrors.curl_config = 'Curl config path is required.'
     if (!form.results.trim()) nextErrors.results = 'Results output path is required.'
@@ -758,6 +1196,7 @@ function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          selected_sources: form.selected_sources,
           addresses: form.addresses,
           curl_config: form.curl_config,
           results: form.results,
@@ -779,10 +1218,10 @@ function App() {
         throw new Error(payload?.message || `Run failed with HTTP ${response.status}.`)
       }
 
-      const parsedRows = parseApiRecords(payload.records)
+      const parsedRows = parseApiRecords(payload.normalized_records ?? payload.records)
       setRows(parsedRows)
       setInvalidLines(payload.invalid_lines ?? 0)
-      setDatasetLabel(payload.results_path || form.results)
+      setDatasetLabel(payload.normalized_results_path || payload.results_path || form.results)
       setErrorText('')
       setCurrentPage(1)
       setRunStatus('success')
@@ -826,6 +1265,10 @@ function App() {
           currentPage={currentPage}
           onPageChange={setCurrentPage}
         />
+      ) : activeView === 'analytics' ? (
+        <AnalyticsPage rows={rows} />
+      ) : activeView === 'analytics2' ? (
+        <AnalyticsTimeSeriesPage rows={rows} />
       ) : (
         <DashboardPage
           rows={rows}

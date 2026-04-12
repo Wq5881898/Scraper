@@ -213,6 +213,78 @@
   gap: 1rem;
 }
 
+.source-selector {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid #d7e4f5;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f8fbff, #f3f8ff);
+}
+
+.source-selector-copy {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.field-heading {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.source-selector-copy p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.source-option-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.source-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.72rem 0.95rem;
+  border: 1px solid #bfd0ea;
+  border-radius: 999px;
+  background: #fff;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.source-chip input {
+  margin: 0;
+}
+
+.field-error {
+  color: #b91c1c;
+}
+
+.analytics-select {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 0.72rem 0.82rem;
+  font: inherit;
+  color: var(--text);
+  background: #fff;
+}
+
+.analytics-select:focus {
+  outline: 2px solid rgb(37 99 235 / 20%);
+  border-color: #2563eb;
+}
+
+.comparison-mismatch td {
+  background: #fff7ed;
+}
+
 .field-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -342,6 +414,10 @@ tbody tr:hover {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.85rem;
+}
+
+.analytics-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .token-grid {
