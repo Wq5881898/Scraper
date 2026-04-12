@@ -26,9 +26,9 @@ const moneyFormatter = new Intl.NumberFormat('en-US', {
 })
 
 const defaultForm = {
-  addresses: 'testlist.txt',
-  curl_config: 'curl_config.txt',
-  results: 'results.jsonl',
+  addresses: 'config/testlist.txt',
+  curl_config: 'config/curl_config.txt',
+  results: 'testdata/results.jsonl',
   qps: '2.0',
   max_workers: '8',
   initial_limit: '3',
@@ -115,6 +115,7 @@ function parseEntry(entry, index) {
     statusCode: String(statusCode || 'unknown'),
     success,
     tokenName: parseTokenName(token, index),
+    symbol: token?.symbol || token?.token_symbol || 'n/a',
     marketCap: coerceNumber(token?.market_cap),
     volume24h: coerceNumber(token?.volume_h24 ?? tokenPrice.volume_24h),
     liquidity: coerceNumber(token?.liquidity_usd ?? token?.liquidity),
@@ -141,6 +142,12 @@ function parseJsonl(rawText) {
   return { parsedRows, invalidLines }
 }
 
+function parseApiRecords(records) {
+  return (records ?? [])
+    .filter((record) => record && typeof record === 'object')
+    .map((record, index) => parseEntry(record, index))
+}
+
 function formatTime(timestampMs) {
   if (!timestampMs) {
     return 'n/a'
@@ -149,6 +156,21 @@ function formatTime(timestampMs) {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
+  })
+}
+
+function formatDateTime(timestampMs) {
+  if (!timestampMs) {
+    return 'n/a'
+  }
+  return new Date(timestampMs).toLocaleString([], {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
   })
 }
 
@@ -286,7 +308,7 @@ function RunPage({ form, errors, onChange, onSubmit, onReset, runStatus, message
             </label>
 
             <label className="field">
-              <span>Global QPS</span>
+              <span>Requests Per Second Limit (QPS)</span>
               <input name="qps" type="number" step="0.1" value={form.qps} onChange={onChange} />
               {errors.qps ? <small>{errors.qps}</small> : null}
             </label>
@@ -336,6 +358,8 @@ function RunPage({ form, errors, onChange, onSubmit, onReset, runStatus, message
               <tr>
                 <th>Task ID</th>
                 <th>Source</th>
+                <th>Timestamp</th>
+                <th>Symbol</th>
                 <th>Success</th>
                 <th>Status</th>
                 <th>Latency</th>
@@ -348,6 +372,8 @@ function RunPage({ form, errors, onChange, onSubmit, onReset, runStatus, message
                   <tr key={row.taskId}>
                     <td>{row.taskId}</td>
                     <td>{row.source}</td>
+                    <td>{formatDateTime(row.timestampMs)}</td>
+                    <td>{row.symbol}</td>
                     <td>{row.success ? 'Yes' : 'No'}</td>
                     <td>{row.statusCode}</td>
                     <td>{row.latency}</td>
@@ -356,7 +382,7 @@ function RunPage({ form, errors, onChange, onSubmit, onReset, runStatus, message
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="empty-state">
+                  <td colSpan="8" className="empty-state">
                     No preview rows available yet. Add a sample results.jsonl file or connect the backend run API.
                   </td>
                 </tr>
@@ -723,12 +749,52 @@ function App() {
     }
 
     setRunStatus('running')
-    setMessage('Run request is being prepared. Connect the backend API next to execute the scraper.')
+    setMessage('Running scraper...')
 
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/run-demo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          addresses: form.addresses,
+          curl_config: form.curl_config,
+          results: form.results,
+          qps: Number(form.qps),
+          max_workers: Number(form.max_workers),
+          initial_limit: Number(form.initial_limit),
+          limit: Number(form.limit),
+        }),
+      })
 
-    setRunStatus('success')
-    setMessage(`Run request prepared for ${form.results}. Switch to Dashboard to review the current sample data.`)
+      let payload = null
+      try {
+        payload = await response.json()
+      } catch {
+        payload = null
+      }
+
+      if (!response.ok || payload?.status !== 'success') {
+        throw new Error(payload?.message || `Run failed with HTTP ${response.status}.`)
+      }
+
+      const parsedRows = parseApiRecords(payload.records)
+      setRows(parsedRows)
+      setInvalidLines(payload.invalid_lines ?? 0)
+      setDatasetLabel(payload.results_path || form.results)
+      setErrorText('')
+      setCurrentPage(1)
+      setRunStatus('success')
+      setMessage(payload.message || 'Run completed successfully.')
+    } catch (error) {
+      setRunStatus('error')
+      if (error instanceof TypeError) {
+        setMessage('Cannot reach the backend API at http://127.0.0.1:8000. Make sure api_server.py is running and try again.')
+      } else {
+        setMessage(error instanceof Error ? error.message : 'Run failed.')
+      }
+    }
   }
 
   return (
