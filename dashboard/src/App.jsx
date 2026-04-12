@@ -25,6 +25,24 @@ const moneyFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 })
 
+const defaultForm = {
+  addresses: 'testlist.txt',
+  curl_config: 'curl_config.txt',
+  results: 'results.jsonl',
+  qps: '2.0',
+  max_workers: '8',
+  initial_limit: '3',
+  limit: '100',
+}
+
+const pageSize = 10
+const navItems = [
+  { id: 'run', label: 'Run' },
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'analytics', label: 'Analytics', disabled: true },
+  { id: 'reports', label: 'Reports', disabled: true },
+]
+
 function coerceNumber(value) {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value
@@ -221,106 +239,175 @@ function StatCard({ label, value, hint }) {
   )
 }
 
-function App() {
-  const [rows, setRows] = useState([])
-  const [invalidLines, setInvalidLines] = useState(0)
-  const [datasetLabel, setDatasetLabel] = useState('Loading bundled sample...')
-  const [errorText, setErrorText] = useState('')
-
-  const loadDatasetText = useCallback((rawText, label) => {
-    const { parsedRows, invalidLines: skippedLines } = parseJsonl(rawText)
-    setRows(parsedRows)
-    setInvalidLines(skippedLines)
-    setDatasetLabel(label)
-    setErrorText(parsedRows.length ? '' : 'No valid JSONL records were found in the selected file.')
-  }, [])
-
-  const loadBundledSample = useCallback(async () => {
-    try {
-      const response = await fetch('/results.jsonl')
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
-      const text = await response.text()
-      loadDatasetText(text, 'public/results.jsonl')
-    } catch {
-      setRows([])
-      setInvalidLines(0)
-      setDatasetLabel('No bundled sample detected')
-      setErrorText('Put a JSONL file in dashboard/public/results.jsonl or upload one from your machine.')
-    }
-  }, [loadDatasetText])
-
-  useEffect(() => {
-    void loadBundledSample()
-  }, [loadBundledSample])
-
-  const handleFileUpload = async (event) => {
-    const [file] = event.target.files ?? []
-    if (!file) {
-      return
-    }
-    const text = await file.text()
-    loadDatasetText(text, file.name)
-    event.target.value = ''
-  }
-
-  const summary = useMemo(() => {
-    const totalRequests = rows.length
-    if (!totalRequests) {
-      return {
-        totalRequests: 0,
-        successRate: null,
-        avgLatency: null,
-        p95Latency: null,
-        totalVolume: null,
-      }
-    }
-
-    const successes = rows.filter((row) => row.success).length
-    const latencies = rows.map((row) => row.latency).filter((value) => Number.isFinite(value))
-    const totalVolume = rows.reduce((sum, row) => sum + (row.volume24h ?? 0), 0)
-
-    return {
-      totalRequests,
-      successRate: (successes / totalRequests) * 100,
-      avgLatency: latencies.length ? latencies.reduce((sum, value) => sum + value, 0) / latencies.length : null,
-      p95Latency: quantile(latencies, 0.95),
-      totalVolume: totalVolume || null,
-    }
-  }, [rows])
-
-  const timelineData = useMemo(
-    () =>
-      rows.slice(-120).map((row) => ({
-        sequence: row.index,
-        time: formatTime(row.timestampMs),
-        latency: row.latency,
-        source: row.source,
-      })),
-    [rows],
-  )
-
-  const sourceData = useMemo(() => buildSourceData(rows), [rows])
-  const statusData = useMemo(() => buildStatusData(rows), [rows])
-  const topTokenData = useMemo(() => buildTopTokenData(rows), [rows])
-
-  const slowestRows = useMemo(
-    () => [...rows].sort((a, b) => b.latency - a.latency).slice(0, 10),
-    [rows],
-  )
+function RunPage({ form, errors, onChange, onSubmit, onReset, runStatus, message, previewRows, currentPage, onPageChange }) {
+  const totalPages = Math.max(1, Math.ceil(previewRows.length / pageSize))
+  const pagedRows = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return previewRows.slice(start, start + pageSize)
+  }, [previewRows, currentPage])
 
   return (
-    <main className="app-shell">
-      <div className="ambient-shape shape-a" aria-hidden="true" />
-      <div className="ambient-shape shape-b" aria-hidden="true" />
+    <>
+      <section className="panel hero-panel">
+        <div>
+          <p className="eyebrow">Scraper Product Entry</p>
+          <h1>Run Scraper</h1>
+          <p className="hero-description">
+            Configure the same inputs used by the Python demo entry point, validate them in the browser, and prepare a scraper run.
+          </p>
+        </div>
 
-      <header className="panel hero-panel">
+        <div className="status-box">
+          <p className="status-label">Current Status</p>
+          <p className={`status-value status-${runStatus}`}>{runStatus.toUpperCase()}</p>
+          <p className="status-message">{message}</p>
+        </div>
+      </section>
+
+      <section className="panel form-panel">
+        <form className="run-form" onSubmit={onSubmit}>
+          <div className="field-grid">
+            <label className="field">
+              <span>Address List Path</span>
+              <input name="addresses" type="text" value={form.addresses} onChange={onChange} />
+              {errors.addresses ? <small>{errors.addresses}</small> : null}
+            </label>
+
+            <label className="field">
+              <span>Curl Config Path</span>
+              <input name="curl_config" type="text" value={form.curl_config} onChange={onChange} />
+              {errors.curl_config ? <small>{errors.curl_config}</small> : null}
+            </label>
+
+            <label className="field">
+              <span>Results Output Path</span>
+              <input name="results" type="text" value={form.results} onChange={onChange} />
+              {errors.results ? <small>{errors.results}</small> : null}
+            </label>
+
+            <label className="field">
+              <span>Global QPS</span>
+              <input name="qps" type="number" step="0.1" value={form.qps} onChange={onChange} />
+              {errors.qps ? <small>{errors.qps}</small> : null}
+            </label>
+
+            <label className="field">
+              <span>Max Workers</span>
+              <input name="max_workers" type="number" value={form.max_workers} onChange={onChange} />
+              {errors.max_workers ? <small>{errors.max_workers}</small> : null}
+            </label>
+
+            <label className="field">
+              <span>Initial Concurrency Limit</span>
+              <input name="initial_limit" type="number" value={form.initial_limit} onChange={onChange} />
+              {errors.initial_limit ? <small>{errors.initial_limit}</small> : null}
+            </label>
+
+            <label className="field">
+              <span>Max Address Count</span>
+              <input name="limit" type="number" value={form.limit} onChange={onChange} />
+              {errors.limit ? <small>{errors.limit}</small> : null}
+            </label>
+          </div>
+
+          <div className="button-row">
+            <button className="button-primary" type="submit">
+              Run Demo
+            </button>
+            <button className="button-secondary" type="button" onClick={onReset}>
+              Reset
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section className="panel preview-panel">
+        <div className="panel-head">
+          <div>
+            <p className="eyebrow">Preview</p>
+            <h2>Results Preview</h2>
+          </div>
+          <p className="preview-count">{previewRows.length} rows loaded</p>
+        </div>
+
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Task ID</th>
+                <th>Source</th>
+                <th>Success</th>
+                <th>Status</th>
+                <th>Latency</th>
+                <th>Error</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pagedRows.length ? (
+                pagedRows.map((row) => (
+                  <tr key={row.taskId}>
+                    <td>{row.taskId}</td>
+                    <td>{row.source}</td>
+                    <td>{row.success ? 'Yes' : 'No'}</td>
+                    <td>{row.statusCode}</td>
+                    <td>{row.latency}</td>
+                    <td>{row.errorType}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="empty-state">
+                    No preview rows available yet. Add a sample results.jsonl file or connect the backend run API.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="pagination-row">
+          <button className="button-secondary" type="button" onClick={() => onPageChange(Math.max(1, currentPage - 1))} disabled={currentPage === 1}>
+            Previous
+          </button>
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            className="button-secondary"
+            type="button"
+            onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </button>
+        </div>
+      </section>
+    </>
+  )
+}
+
+function DashboardPage({
+  rows,
+  invalidLines,
+  datasetLabel,
+  errorText,
+  onFileUpload,
+  onReloadSample,
+  summary,
+  timelineData,
+  sourceData,
+  statusData,
+  topTokenData,
+  slowestRows,
+}) {
+  return (
+    <>
+      <section className="panel hero-panel">
         <div className="hero-copy">
           <p className="eyebrow">Scraper Dashboard</p>
           <h1>React Visual Console For JSONL Runs</h1>
           <p className="hero-description">
-            Inspect scraper health, latency behavior, and token-side metrics from `results.jsonl` with upload support.
+            Inspect scraper health, latency behavior, and token-side metrics from results.jsonl with upload support.
           </p>
         </div>
 
@@ -328,9 +415,9 @@ function App() {
           <label className="button-primary" htmlFor="upload-jsonl">
             Upload JSONL
           </label>
-          <input id="upload-jsonl" type="file" accept=".jsonl,.txt,.json" onChange={handleFileUpload} />
+          <input id="upload-jsonl" type="file" accept=".jsonl,.txt,.json" onChange={onFileUpload} />
 
-          <button className="button-secondary" type="button" onClick={() => void loadBundledSample()}>
+          <button className="button-secondary" type="button" onClick={onReloadSample}>
             Reload Bundled Sample
           </button>
 
@@ -346,7 +433,7 @@ function App() {
             </p>
           </div>
         </div>
-      </header>
+      </section>
 
       {errorText ? <p className="error-banner">{errorText}</p> : null}
 
@@ -495,6 +582,200 @@ function App() {
           Aggregated traded volume (24h fields): <span>{formatMoney(summary.totalVolume)}</span>
         </p>
       </footer>
+    </>
+  )
+}
+
+function App() {
+  const [activeView, setActiveView] = useState('run')
+  const [rows, setRows] = useState([])
+  const [invalidLines, setInvalidLines] = useState(0)
+  const [datasetLabel, setDatasetLabel] = useState('Loading bundled sample...')
+  const [errorText, setErrorText] = useState('')
+  const [form, setForm] = useState(defaultForm)
+  const [errors, setErrors] = useState({})
+  const [runStatus, setRunStatus] = useState('idle')
+  const [message, setMessage] = useState('Fill in the form and run a scraper demo.')
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const loadDatasetText = useCallback((rawText, label) => {
+    const { parsedRows, invalidLines: skippedLines } = parseJsonl(rawText)
+    setRows(parsedRows)
+    setInvalidLines(skippedLines)
+    setDatasetLabel(label)
+    setErrorText(parsedRows.length ? '' : 'No valid JSONL records were found in the selected file.')
+  }, [])
+
+  const loadBundledSample = useCallback(async () => {
+    try {
+      const response = await fetch('/results.jsonl')
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      const text = await response.text()
+      loadDatasetText(text, 'public/results.jsonl')
+    } catch {
+      setRows([])
+      setInvalidLines(0)
+      setDatasetLabel('No bundled sample detected')
+      setErrorText('Put a JSONL file in dashboard/public/results.jsonl or upload one from your machine.')
+    }
+  }, [loadDatasetText])
+
+  useEffect(() => {
+    void loadBundledSample()
+  }, [loadBundledSample])
+
+  const handleFileUpload = async (event) => {
+    const [file] = event.target.files ?? []
+    if (!file) {
+      return
+    }
+    const text = await file.text()
+    loadDatasetText(text, file.name)
+    event.target.value = ''
+  }
+
+  const summary = useMemo(() => {
+    const totalRequests = rows.length
+    if (!totalRequests) {
+      return {
+        totalRequests: 0,
+        successRate: null,
+        avgLatency: null,
+        p95Latency: null,
+        totalVolume: null,
+      }
+    }
+
+    const successes = rows.filter((row) => row.success).length
+    const latencies = rows.map((row) => row.latency).filter((value) => Number.isFinite(value))
+    const totalVolume = rows.reduce((sum, row) => sum + (row.volume24h ?? 0), 0)
+
+    return {
+      totalRequests,
+      successRate: (successes / totalRequests) * 100,
+      avgLatency: latencies.length ? latencies.reduce((sum, value) => sum + value, 0) / latencies.length : null,
+      p95Latency: quantile(latencies, 0.95),
+      totalVolume: totalVolume || null,
+    }
+  }, [rows])
+
+  const timelineData = useMemo(
+    () =>
+      rows.slice(-120).map((row) => ({
+        sequence: row.index,
+        time: formatTime(row.timestampMs),
+        latency: row.latency,
+        source: row.source,
+      })),
+    [rows],
+  )
+
+  const sourceData = useMemo(() => buildSourceData(rows), [rows])
+  const statusData = useMemo(() => buildStatusData(rows), [rows])
+  const topTokenData = useMemo(() => buildTopTokenData(rows), [rows])
+  const slowestRows = useMemo(() => [...rows].sort((a, b) => b.latency - a.latency).slice(0, 10), [rows])
+
+  function handleChange(event) {
+    const { name, value } = event.target
+    setForm((prev) => ({ ...prev, [name]: value }))
+    setErrors((prev) => {
+      if (!prev[name]) {
+        return prev
+      }
+      const next = { ...prev }
+      delete next[name]
+      return next
+    })
+  }
+
+  function validateForm() {
+    const nextErrors = {}
+
+    if (!form.addresses.trim()) nextErrors.addresses = 'Address list path is required.'
+    if (!form.curl_config.trim()) nextErrors.curl_config = 'Curl config path is required.'
+    if (!form.results.trim()) nextErrors.results = 'Results output path is required.'
+    if (!(Number(form.qps) > 0)) nextErrors.qps = 'QPS must be greater than 0.'
+    if (!(Number(form.max_workers) >= 1)) nextErrors.max_workers = 'Max workers must be at least 1.'
+    if (!(Number(form.initial_limit) >= 1)) nextErrors.initial_limit = 'Initial limit must be at least 1.'
+    if (!(Number(form.limit) >= 1)) nextErrors.limit = 'Limit must be at least 1.'
+
+    setErrors(nextErrors)
+    return Object.keys(nextErrors).length === 0
+  }
+
+  function handleReset() {
+    setForm(defaultForm)
+    setErrors({})
+    setRunStatus('idle')
+    setMessage('Form reset. Ready to run again.')
+    setCurrentPage(1)
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault()
+
+    if (!validateForm()) {
+      setRunStatus('error')
+      setMessage('Please fix the validation errors before running.')
+      return
+    }
+
+    setRunStatus('running')
+    setMessage('Run request is being prepared. Connect the backend API next to execute the scraper.')
+
+    await new Promise((resolve) => setTimeout(resolve, 500))
+
+    setRunStatus('success')
+    setMessage(`Run request prepared for ${form.results}. Switch to Dashboard to review the current sample data.`)
+  }
+
+  return (
+    <main className="app-shell">
+      <nav className="top-nav">
+        {navItems.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={`nav-tab ${activeView === item.id ? 'nav-tab-active' : ''}`}
+            disabled={item.disabled}
+            onClick={() => setActiveView(item.id)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </nav>
+
+      {activeView === 'run' ? (
+        <RunPage
+          form={form}
+          errors={errors}
+          onChange={handleChange}
+          onSubmit={handleSubmit}
+          onReset={handleReset}
+          runStatus={runStatus}
+          message={message}
+          previewRows={rows}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+        />
+      ) : (
+        <DashboardPage
+          rows={rows}
+          invalidLines={invalidLines}
+          datasetLabel={datasetLabel}
+          errorText={errorText}
+          onFileUpload={handleFileUpload}
+          onReloadSample={() => void loadBundledSample()}
+          summary={summary}
+          timelineData={timelineData}
+          sourceData={sourceData}
+          statusData={statusData}
+          topTokenData={topTokenData}
+          slowestRows={slowestRows}
+        />
+      )}
     </main>
   )
 }
