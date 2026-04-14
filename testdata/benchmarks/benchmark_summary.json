@@ -1,0 +1,40 @@
+[
+  {
+    "label": "single-thread",
+    "results_path": "testdata\\benchmarks\\single-thread.jsonl",
+    "sources": [
+      "web2"
+    ],
+    "qps": 2.0,
+    "max_workers": 1,
+    "initial_limit": 1,
+    "address_limit": 10,
+    "elapsed_sec": 7.754,
+    "total_records": 10,
+    "success_count": 10,
+    "failure_count": 0,
+    "success_rate_pct": 100.0,
+    "avg_latency_ms": 772.2,
+    "throughput_rps": 1.29,
+    "invalid_lines": 0
+  },
+  {
+    "label": "medium-thread",
+    "results_path": "testdata\\benchmarks\\medium-thread.jsonl",
+    "sources": [
+      "web2"
+    ],
+    "qps": 2.0,
+    "max_workers": 4,
+    "initial_limit": 2,
+    "address_limit": 10,
+    "elapsed_sec": 4.857,
+    "total_records": 10,
+    "success_count": 10,
+    "failure_count": 0,
+    "success_rate_pct": 100.0,
+    "avg_latency_ms": 907.9,
+    "throughput_rps": 2.059,
+    "invalid_lines": 0
+  }
+]
