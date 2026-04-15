@@ -416,6 +416,10 @@ tbody tr:hover {
   gap: 0.85rem;
 }
 
+.monitor-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .analytics-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -443,6 +447,10 @@ tbody tr:hover {
   grid-template-rows: auto 1fr;
 }
 
+.full-width-card {
+  min-height: auto;
+}
+
 @media (max-width: 1120px) {
   .hero-panel {
     grid-template-columns: 1fr;
@@ -457,6 +465,10 @@ tbody tr:hover {
   }
 
   .token-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .monitor-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 from pathlib import Path
 from typing import Any
@@ -238,6 +239,38 @@ def create_app(default_results_path: str = DEFAULT_RESULTS_PATH) -> Flask:
                 "records": normalized_rows,
             }
         )
+
+    @app.get("/stress-benchmark-summary")
+    def stress_benchmark_summary() -> Any:
+        """
+        Return the latest stress benchmark summary JSON for the monitoring dashboard.
+        Edited by Qi: this endpoint lets the Dashboard load the final benchmark dataset without mixing old JSONL files.
+        ---
+        tags:
+          - Results
+        parameters:
+          - name: path
+            in: query
+            required: false
+            type: string
+            description: Summary JSON file path. Defaults to testdata/stress_benchmarks/stress_benchmark_summary.json.
+        responses:
+          200:
+            description: Stress benchmark summary returned.
+          404:
+            description: File does not exist.
+        """
+        path = request.args.get("path", "").strip() or "testdata/stress_benchmarks/stress_benchmark_summary.json"
+        if not os.path.exists(path):
+            return jsonify({"error": f"File not found: {path}"}), 404
+
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                payload = json.load(handle)
+        except json.JSONDecodeError as exc:
+            return jsonify({"error": f"Invalid JSON in summary file: {exc}"}), 400
+
+        return jsonify({"path": path, "records": payload})
 
     @app.post("/normalize-results")
     def normalize_results_api() -> Any:

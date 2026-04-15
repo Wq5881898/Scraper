@@ -3,11 +3,8 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   Line,
   LineChart,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -15,10 +12,12 @@ import {
 } from 'recharts'
 import './App.css'
 
-const statusPalette = ['#0f766e', '#0891b2', '#f59e0b', '#ea580c', '#dc2626']
-const tokenPalette = ['#1d4ed8', '#0f766e', '#b45309', '#be123c', '#1e3a8a', '#14532d']
 const numberFormatter = new Intl.NumberFormat('en-US')
 const decimalFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
+const comparisonDecimalFormatter = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 4,
+  maximumFractionDigits: 4,
+})
 const preciseDecimalFormatter = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 5,
   maximumFractionDigits: 5,
@@ -35,8 +34,8 @@ const defaultForm = {
   curl_config: 'config/curl_config.txt',
   results: 'testdata/results.jsonl',
   qps: '2.0',
-  max_workers: '8',
-  initial_limit: '3',
+  max_workers: '4',
+  initial_limit: '2',
   limit: '100',
 }
 
@@ -74,6 +73,15 @@ function coerceTimestamp(value) {
     return numeric
   }
   return numeric * 1000
+}
+
+function deriveDemoRunConfig(qpsValue) {
+  const safeQps = Math.max(1, Math.ceil(Number(qpsValue) || 1))
+  return {
+    maxWorkers: Math.max(4, safeQps * 2),
+    initialLimit: Math.max(1, safeQps),
+    limit: 100,
+  }
 }
 
 function compactAddress(value) {
@@ -211,6 +219,71 @@ function parseApiRecords(records) {
     })
 }
 
+function parseStressBenchmarkSummary(payload) {
+  const records = Array.isArray(payload) ? payload : Array.isArray(payload?.records) ? payload.records : []
+
+  return records
+    .filter((record) => record && typeof record === 'object')
+    .map((record, index) => {
+      const statusCodeCounts = record.status_code_counts ?? {}
+      const errorTypeCounts = record.error_type_counts ?? {}
+      const totalRecords = coerceNumber(record.total_records) ?? 0
+      const successCount = coerceNumber(record.success_count) ?? 0
+      const failureCount = coerceNumber(record.failure_count) ?? 0
+      const backoffTriggers = coerceNumber(record.backoff_trigger_count) ?? 0
+      const http200Count = coerceNumber(statusCodeCounts['200']) ?? 0
+      const finalSslFailures = coerceNumber(errorTypeCounts.SSLError) ?? 0
+      const finalConnectionFailures = coerceNumber(errorTypeCounts.ConnectionError) ?? 0
+      const firstAttemptRetryCount =
+        Array.isArray(record.round_results)
+          ? record.round_results.reduce((sum, roundResult) => {
+              const events = Array.isArray(roundResult?.backoff?.events) ? roundResult.backoff.events : []
+              return sum + events.filter((event) => coerceNumber(event?.attempt) === 1).length
+            }, 0)
+          : 0
+      const firstTrySuccessRate = totalRecords ? ((totalRecords - firstAttemptRetryCount) / totalRecords) * 100 : 0
+
+      let mainSignal = 'none'
+      if (failureCount > 0 && finalSslFailures > 0) {
+        mainSignal = 'SSLError'
+      } else if (failureCount > 0 && finalConnectionFailures > 0) {
+        mainSignal = 'ConnectionError'
+      } else if (backoffTriggers > 0) {
+        mainSignal = 'Backoff'
+      }
+
+      return {
+        id: record.label ?? `benchmark-${index + 1}`,
+        label: record.label ?? `Benchmark ${index + 1}`,
+        workers: coerceNumber(record.max_workers) ?? 0,
+        initialLimit: coerceNumber(record.initial_limit) ?? 0,
+        rounds: coerceNumber(record.rounds) ?? 0,
+        totalRecords,
+        successCount,
+        failureCount,
+        successRate: coerceNumber(record.success_rate_pct) ?? (totalRecords ? (successCount / totalRecords) * 100 : 0),
+        firstTrySuccessRate,
+        firstAttemptRetryCount,
+        elapsedSec: coerceNumber(record.elapsed_sec) ?? 0,
+        avgLatency: coerceNumber(record.avg_latency_ms) ?? 0,
+        throughput: coerceNumber(record.throughput_rps) ?? 0,
+        http200Count,
+        http429Count: coerceNumber(record.http_429_count) ?? 0,
+        timeoutCount: coerceNumber(record.timeout_count) ?? 0,
+        connErrorCount: coerceNumber(record.conn_error_count) ?? 0,
+        backoffTriggers,
+        finalSslFailures,
+        finalConnectionFailures,
+        avgCpu: coerceNumber(record.resource_usage?.avg_cpu_pct),
+        peakMemory: coerceNumber(record.resource_usage?.peak_memory_mb),
+        sourceLabel: Array.isArray(record.sources) ? record.sources.join(', ') : 'n/a',
+        addressesPerRound: coerceNumber(record.addresses_per_round) ?? totalRecords,
+        mainSignal,
+      }
+    })
+    .sort((left, right) => left.workers - right.workers)
+}
+
 function formatTime(timestampMs) {
   if (!timestampMs) {
     return 'n/a'
@@ -271,6 +344,27 @@ function formatLatency(value) {
   return `${decimalFormatter.format(value)} ms`
 }
 
+function formatRate(value) {
+  if (value === null || value === undefined) {
+    return '--'
+  }
+  return `${decimalFormatter.format(value)} req/s`
+}
+
+function formatCpu(value) {
+  if (value === null || value === undefined) {
+    return '--'
+  }
+  return `${decimalFormatter.format(value)}%`
+}
+
+function formatMemory(value) {
+  if (value === null || value === undefined) {
+    return '--'
+  }
+  return `${decimalFormatter.format(value)} MB`
+}
+
 function formatMoney(value) {
   if (value === null || value === undefined) {
     return '--'
@@ -310,7 +404,7 @@ function formatComparisonValue(value, type = 'text') {
     return formatCompactMoney(value)
   }
   if (type === 'number') {
-    return decimalFormatter.format(value)
+    return comparisonDecimalFormatter.format(value)
   }
   if (type === 'percent') {
     return formatPercent(value)
@@ -331,6 +425,15 @@ function areDifferent(left, right) {
     return false
   }
   return left !== right
+}
+
+function areDisplayValuesDifferent(left, right, type = 'text') {
+  const leftEmpty = left === null || left === undefined || left === ''
+  const rightEmpty = right === null || right === undefined || right === ''
+  if (leftEmpty && rightEmpty) {
+    return false
+  }
+  return formatComparisonValue(left, type) !== formatComparisonValue(right, type)
 }
 
 function buildSourceData(rows) {
@@ -532,7 +635,7 @@ function AnalyticsPage({ rows }) {
               {comparisonFields.map((field) => {
                 const left = latestBySource.web1?.[field.key] ?? null
                 const right = latestBySource.web2?.[field.key] ?? null
-                const mismatch = areDifferent(left, right)
+                const mismatch = areDisplayValuesDifferent(left, right, field.type)
 
                 return (
                   <tr key={field.key} className={mismatch ? 'comparison-mismatch' : ''}>
@@ -656,11 +759,24 @@ function AnalyticsTimeSeriesPage({ rows }) {
 }
 
 function RunPage({ form, errors, onChange, onSubmit, onReset, runStatus, message, previewRows, currentPage, onPageChange }) {
-  const totalPages = Math.max(1, Math.ceil(previewRows.length / pageSize))
+  const sortedPreviewRows = useMemo(
+    () =>
+      [...previewRows].sort((left, right) => {
+        const leftTime = left.timestampMs ?? 0
+        const rightTime = right.timestampMs ?? 0
+        if (rightTime !== leftTime) {
+          return rightTime - leftTime
+        }
+        return String(right.taskId).localeCompare(String(left.taskId))
+      }),
+    [previewRows],
+  )
+
+  const totalPages = Math.max(1, Math.ceil(sortedPreviewRows.length / pageSize))
   const pagedRows = useMemo(() => {
     const start = (currentPage - 1) * pageSize
-    return previewRows.slice(start, start + pageSize)
-  }, [previewRows, currentPage])
+    return sortedPreviewRows.slice(start, start + pageSize)
+  }, [sortedPreviewRows, currentPage])
 
   return (
     <>
@@ -669,7 +785,7 @@ function RunPage({ form, errors, onChange, onSubmit, onReset, runStatus, message
           <p className="eyebrow">Scraper Product Entry</p>
           <h1>Run Scraper</h1>
           <p className="hero-description">
-            Configure the same inputs used by the Python demo entry point, validate them in the browser, and prepare a scraper run.
+            Choose the source and request speed, then launch a scraper demo run with browser-side validation.
           </p>
         </div>
 
@@ -728,24 +844,6 @@ function RunPage({ form, errors, onChange, onSubmit, onReset, runStatus, message
               <input name="qps" type="number" step="0.1" value={form.qps} onChange={onChange} />
               {errors.qps ? <small>{errors.qps}</small> : null}
             </label>
-
-            <label className="field">
-              <span>Max Workers</span>
-              <input name="max_workers" type="number" value={form.max_workers} onChange={onChange} />
-              {errors.max_workers ? <small>{errors.max_workers}</small> : null}
-            </label>
-
-            <label className="field">
-              <span>Initial Concurrency Limit</span>
-              <input name="initial_limit" type="number" value={form.initial_limit} onChange={onChange} />
-              {errors.initial_limit ? <small>{errors.initial_limit}</small> : null}
-            </label>
-
-            <label className="field">
-              <span>Max Address Count</span>
-              <input name="limit" type="number" value={form.limit} onChange={onChange} />
-              {errors.limit ? <small>{errors.limit}</small> : null}
-            </label>
           </div>
 
           <div className="button-row">
@@ -765,7 +863,7 @@ function RunPage({ form, errors, onChange, onSubmit, onReset, runStatus, message
             <p className="eyebrow">Preview</p>
             <h2>Results Preview</h2>
           </div>
-          <p className="preview-count">{previewRows.length} rows loaded</p>
+          <p className="preview-count">{sortedPreviewRows.length} rows loaded</p>
         </div>
 
         <div className="table-wrap">
@@ -829,38 +927,30 @@ function RunPage({ form, errors, onChange, onSubmit, onReset, runStatus, message
 }
 
 function DashboardPage({
-  rows,
-  invalidLines,
+  benchmarkRows,
   datasetLabel,
   errorText,
   onFileUpload,
   onReloadSample,
-  summary,
-  timelineData,
-  sourceData,
-  statusData,
-  topTokenData,
-  slowestRows,
+  dashboardSummary,
 }) {
   return (
     <>
       <section className="panel hero-panel">
         <div className="hero-copy">
-          <p className="eyebrow">Scraper Dashboard</p>
-          <h1>React Visual Console For JSONL Runs</h1>
-          <p className="hero-description">
-            Inspect scraper health, latency behavior, and token-side metrics from results.jsonl with upload support.
-          </p>
+          <p className="eyebrow">Scraper Monitoring</p>
+          <h1>Scraper Monitoring Dashboard</h1>
+          <p className="hero-description">Track scraper throughput, stability, resource usage, and error signals.</p>
         </div>
 
         <div className="hero-actions">
           <label className="button-primary" htmlFor="upload-jsonl">
-            Upload JSONL
+            Upload Summary JSON
           </label>
-          <input id="upload-jsonl" type="file" accept=".jsonl,.txt,.json" onChange={onFileUpload} />
+          <input id="upload-jsonl" type="file" accept=".json" onChange={onFileUpload} />
 
           <button className="button-secondary" type="button" onClick={onReloadSample}>
-            Reload Bundled Sample
+            Reload Stress Benchmark Sample
           </button>
 
           <div className="dataset-meta">
@@ -868,10 +958,13 @@ function DashboardPage({
               Dataset: <span>{datasetLabel}</span>
             </p>
             <p>
-              Parsed rows: <span>{formatCount(rows.length)}</span>
+              Benchmark configs: <span>{formatCount(benchmarkRows.length)}</span>
             </p>
             <p>
-              Skipped lines: <span>{formatCount(invalidLines)}</span>
+              Requests per config: <span>{formatCount(dashboardSummary.requestsPerConfig)}</span>
+            </p>
+            <p>
+              Sources: <span>{dashboardSummary.sourceLabel}</span>
             </p>
           </div>
         </div>
@@ -880,30 +973,34 @@ function DashboardPage({
       {errorText ? <p className="error-banner">{errorText}</p> : null}
 
       <section className="stat-grid">
-        <StatCard label="Total Requests" value={formatCount(summary.totalRequests)} hint="Rows parsed from JSONL" />
-        <StatCard label="Success Rate" value={formatPercent(summary.successRate)} hint="Success by status or HTTP code" />
-        <StatCard label="Average Latency" value={formatLatency(summary.avgLatency)} hint="Mean per-request response time" />
-        <StatCard label="P95 Latency" value={formatLatency(summary.p95Latency)} hint="Tail latency pressure indicator" />
+        <StatCard label="Best Stable Threads" value={formatCount(dashboardSummary.bestStable?.workers)} hint="Highest stable concurrency found in the benchmark" />
+        <StatCard label="Best Stable Throughput" value={formatRate(dashboardSummary.bestStable?.throughput)} hint="Best throughput before backoff or failures appeared" />
+        <StatCard label="Best Stable Avg Latency" value={formatLatency(dashboardSummary.bestStable?.avgLatency)} hint="Average latency at the best stable thread level" />
+        <StatCard label="Best Stable Avg CPU" value={formatCpu(dashboardSummary.bestStable?.avgCpu)} hint="CPU usage is aggregated across cores" />
+        <StatCard label="Best Stable Peak Memory" value={formatMemory(dashboardSummary.bestStable?.peakMemory)} hint="Peak memory at the best stable thread level" />
+        <StatCard label="First Backoff Threads" value={formatCount(dashboardSummary.firstBackoff?.workers)} hint="First thread level that triggered retry backoff" />
+        <StatCard label="Failure Starts At" value={formatCount(dashboardSummary.firstFailure?.workers)} hint="First thread level with final request failures" />
+        <StatCard label="Final SSL Failures" value={formatCount(dashboardSummary.totalFinalSslFailures)} hint="Final failed requests with SSLError" />
       </section>
 
-      <section className="chart-grid">
+      <section className="chart-grid monitor-grid">
         <article className="panel chart-card">
           <div className="card-header">
-            <h2>Latency Timeline</h2>
-            <p>Latest 120 records</p>
+            <h2>Throughput vs Threads</h2>
+            <p>Overall scraper throughput under higher concurrency</p>
           </div>
           <div className="chart-wrap">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={timelineData}>
+              <LineChart data={benchmarkRows}>
                 <CartesianGrid strokeDasharray="4 4" stroke="#d4d7dc" />
-                <XAxis dataKey="sequence" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `${value}ms`} />
+                <XAxis dataKey="workers" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => decimalFormatter.format(value)} />
                 <Tooltip
-                  formatter={(value) => formatLatency(value)}
-                  labelFormatter={(value) => `Request #${value}`}
+                  formatter={(value) => formatRate(value)}
+                  labelFormatter={(value) => `${value} threads`}
                   contentStyle={{ borderRadius: 12, border: '1px solid #d9e0ea' }}
                 />
-                <Line type="monotone" dataKey="latency" stroke="#2563eb" strokeWidth={2.5} dot={false} />
+                <Line type="monotone" dataKey="throughput" stroke="#2563eb" strokeWidth={2.5} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -911,119 +1008,154 @@ function DashboardPage({
 
         <article className="panel chart-card">
           <div className="card-header">
-            <h2>Source Reliability</h2>
-            <p>Success and failure counts per source</p>
+            <h2>Average Latency vs Threads</h2>
+            <p>Latency cost of pushing concurrency higher</p>
           </div>
           <div className="chart-wrap">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={sourceData}>
+              <LineChart data={benchmarkRows}>
                 <CartesianGrid strokeDasharray="4 4" stroke="#d4d7dc" />
-                <XAxis dataKey="source" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
+                <XAxis dataKey="workers" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `${Math.round(value)}ms`} />
                 <Tooltip
-                  formatter={(value, name) => {
-                    if (name === 'successRate') {
-                      return formatPercent(value)
-                    }
-                    return formatCount(value)
-                  }}
+                  formatter={(value) => formatLatency(value)}
+                  labelFormatter={(value) => `${value} threads`}
                   contentStyle={{ borderRadius: 12, border: '1px solid #d9e0ea' }}
                 />
-                <Bar dataKey="successes" stackId="result" fill="#0f766e" />
-                <Bar dataKey="failures" stackId="result" fill="#ea580c" />
-              </BarChart>
+                <Line type="monotone" dataKey="avgLatency" stroke="#ea580c" strokeWidth={2.5} dot={{ r: 3 }} />
+              </LineChart>
             </ResponsiveContainer>
           </div>
         </article>
 
         <article className="panel chart-card">
           <div className="card-header">
-            <h2>Status Code Mix</h2>
-            <p>Distribution of HTTP status outcomes</p>
+            <h2>Average CPU vs Threads</h2>
+            <p>CPU usage rises as more workers stay active</p>
           </div>
           <div className="chart-wrap">
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={statusData}
-                  dataKey="count"
-                  nameKey="statusCode"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius="72%"
-                  label={({ statusCode, percent }) => `${statusCode} (${decimalFormatter.format(percent * 100)}%)`}
-                >
-                  {statusData.map((segment, index) => (
-                    <Cell key={`${segment.statusCode}-${segment.count}`} fill={statusPalette[index % statusPalette.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => formatCount(value)} contentStyle={{ borderRadius: 12, border: '1px solid #d9e0ea' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </article>
-      </section>
-
-      <section className="chart-grid token-grid">
-        <article className="panel chart-card">
-          <div className="card-header">
-            <h2>Top Market Caps</h2>
-            <p>Derived from parsed token payloads</p>
-          </div>
-          <div className="chart-wrap">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topTokenData} layout="vertical" margin={{ left: 20, right: 8 }}>
+              <LineChart data={benchmarkRows}>
                 <CartesianGrid strokeDasharray="4 4" stroke="#d4d7dc" />
-                <XAxis type="number" tick={{ fontSize: 12 }} tickFormatter={(value) => `${Math.round(value / 1_000_000)}M`} />
-                <YAxis dataKey="tokenName" type="category" width={100} tick={{ fontSize: 12 }} />
-                <Tooltip formatter={(value) => formatMoney(value)} contentStyle={{ borderRadius: 12, border: '1px solid #d9e0ea' }} />
-                <Bar dataKey="marketCap" radius={[8, 8, 8, 8]}>
-                  {topTokenData.map((item, index) => (
-                    <Cell key={`${item.tokenName}-${item.source}`} fill={tokenPalette[index % tokenPalette.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
+                <XAxis dataKey="workers" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `${Math.round(value)}%`} />
+                <Tooltip formatter={(value) => formatCpu(value)} labelFormatter={(value) => `${value} threads`} contentStyle={{ borderRadius: 12, border: '1px solid #d9e0ea' }} />
+                <Line type="monotone" dataKey="avgCpu" stroke="#0f766e" strokeWidth={2.5} dot={{ r: 3 }} />
+              </LineChart>
             </ResponsiveContainer>
           </div>
         </article>
 
-        <article className="panel table-card">
+        <article className="panel chart-card">
           <div className="card-header">
-            <h2>Slowest Requests</h2>
-            <p>Top 10 latency outliers</p>
+            <h2>Peak Memory vs Threads</h2>
+            <p>Memory cost grows with more aggressive concurrency</p>
           </div>
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Task</th>
-                  <th>Source</th>
-                  <th>Token</th>
-                  <th>Latency</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {slowestRows.map((row) => (
-                  <tr key={row.taskId}>
-                    <td>{compactAddress(row.taskId)}</td>
-                    <td>{row.source}</td>
-                    <td>{row.tokenName}</td>
-                    <td>{formatLatency(row.latency)}</td>
-                    <td>{row.statusCode}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="chart-wrap">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={benchmarkRows}>
+                <CartesianGrid strokeDasharray="4 4" stroke="#d4d7dc" />
+                <XAxis dataKey="workers" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} tickFormatter={(value) => `${Math.round(value)}MB`} />
+                <Tooltip formatter={(value) => formatMemory(value)} labelFormatter={(value) => `${value} threads`} contentStyle={{ borderRadius: 12, border: '1px solid #d9e0ea' }} />
+                <Line type="monotone" dataKey="peakMemory" stroke="#8b5cf6" strokeWidth={2.5} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </article>
+
+        <article className="panel chart-card">
+          <div className="card-header">
+            <h2>Success Rate vs Threads</h2>
+            <p>Final success versus first-try success before backoff recovery</p>
+          </div>
+          <div className="chart-wrap">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={benchmarkRows}>
+                <CartesianGrid strokeDasharray="4 4" stroke="#d4d7dc" />
+                <XAxis dataKey="workers" tick={{ fontSize: 12 }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} tickFormatter={(value) => `${value}%`} />
+                <Tooltip
+                  formatter={(value, _dataKey, item) => [formatPercent(value), item?.name ?? 'Success Rate']}
+                  labelFormatter={(value) => `${value} threads`}
+                  contentStyle={{ borderRadius: 12, border: '1px solid #d9e0ea' }}
+                />
+                <Line type="monotone" dataKey="successRate" name="Final Success Rate" stroke="#16a34a" strokeWidth={2.5} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="firstTrySuccessRate" name="First-Try Success Rate" stroke="#2563eb" strokeWidth={2.5} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </article>
+
+        <article className="panel chart-card">
+          <div className="card-header">
+            <h2>Failures and Backoff</h2>
+            <p>Final failures and retry pressure by thread level</p>
+          </div>
+          <div className="chart-wrap">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={benchmarkRows}>
+                <CartesianGrid strokeDasharray="4 4" stroke="#d4d7dc" />
+                <XAxis dataKey="workers" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip formatter={(value) => formatCount(value)} labelFormatter={(value) => `${value} threads`} contentStyle={{ borderRadius: 12, border: '1px solid #d9e0ea' }} />
+                <Bar dataKey="backoffTriggers" fill="#f59e0b" />
+                <Bar dataKey="failureCount" fill="#334155" />
+                <Bar dataKey="finalSslFailures" fill="#dc2626" />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </article>
       </section>
 
-      <footer className="panel footer-note">
-        <p>
-          Aggregated traded volume (24h fields): <span>{formatMoney(summary.totalVolume)}</span>
-        </p>
-      </footer>
+      <section className="panel table-card full-width-card">
+        <div className="card-header">
+          <h2>Thread-Level Benchmark Summary</h2>
+          <p>Final benchmark values used by this monitoring dashboard</p>
+        </div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Label</th>
+                <th>Workers</th>
+                <th>Records</th>
+                <th>Success Rate</th>
+                <th>First-Try Success</th>
+                <th>Time (s)</th>
+                <th>Throughput</th>
+                <th>Avg Latency</th>
+                <th>Backoff</th>
+                <th>Final Failures</th>
+                <th>Final SSL</th>
+                <th>Avg CPU</th>
+                <th>Peak Mem</th>
+                <th>Main Signal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {benchmarkRows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.label}</td>
+                  <td>{formatCount(row.workers)}</td>
+                  <td>{formatCount(row.totalRecords)}</td>
+                  <td>{formatPercent(row.successRate)}</td>
+                  <td>{formatPercent(row.firstTrySuccessRate)}</td>
+                  <td>{decimalFormatter.format(row.elapsedSec)}</td>
+                  <td>{formatRate(row.throughput)}</td>
+                  <td>{formatLatency(row.avgLatency)}</td>
+                  <td>{formatCount(row.backoffTriggers)}</td>
+                  <td>{formatCount(row.failureCount)}</td>
+                  <td>{formatCount(row.finalSslFailures)}</td>
+                  <td>{formatCpu(row.avgCpu)}</td>
+                  <td>{formatMemory(row.peakMemory)}</td>
+                  <td>{row.mainSignal}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </>
   )
 }
@@ -1034,6 +1166,9 @@ function App() {
   const [invalidLines, setInvalidLines] = useState(0)
   const [datasetLabel, setDatasetLabel] = useState('Loading bundled sample...')
   const [errorText, setErrorText] = useState('')
+  const [benchmarkRows, setBenchmarkRows] = useState([])
+  const [dashboardDatasetLabel, setDashboardDatasetLabel] = useState('Loading stress benchmark sample...')
+  const [dashboardErrorText, setDashboardErrorText] = useState('')
   const [form, setForm] = useState(defaultForm)
   const [errors, setErrors] = useState({})
   const [runStatus, setRunStatus] = useState('idle')
@@ -1077,9 +1212,48 @@ function App() {
     }
   }, [loadDatasetText])
 
+  const loadDashboardSummaryText = useCallback((rawText, label) => {
+    const payload = JSON.parse(rawText)
+    const parsedSummary = parseStressBenchmarkSummary(payload)
+    setBenchmarkRows(parsedSummary)
+    setDashboardDatasetLabel(label)
+    setDashboardErrorText(parsedSummary.length ? '' : 'No valid stress benchmark configs were found in the selected summary file.')
+  }, [])
+
+  const loadDashboardSample = useCallback(async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/stress-benchmark-summary?path=testdata/stress_benchmarks/stress_benchmark_summary.json')
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      const payload = await response.json()
+      const parsedSummary = parseStressBenchmarkSummary(payload)
+      setBenchmarkRows(parsedSummary)
+      setDashboardDatasetLabel(payload.path || 'testdata/stress_benchmarks/stress_benchmark_summary.json')
+      setDashboardErrorText(parsedSummary.length ? '' : 'No valid stress benchmark configs were found.')
+    } catch {
+      try {
+        const response = await fetch('/stress_benchmark_summary.json')
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`)
+        }
+        const text = await response.text()
+        loadDashboardSummaryText(text, 'public/stress_benchmark_summary.json')
+      } catch {
+        setBenchmarkRows([])
+        setDashboardDatasetLabel('No stress benchmark sample detected')
+        setDashboardErrorText('Start api_server.py for stress benchmark data, or upload stress_benchmark_summary.json from your machine.')
+      }
+    }
+  }, [loadDashboardSummaryText])
+
   useEffect(() => {
     void loadBundledSample()
   }, [loadBundledSample])
+
+  useEffect(() => {
+    void loadDashboardSample()
+  }, [loadDashboardSample])
 
   const handleFileUpload = async (event) => {
     const [file] = event.target.files ?? []
@@ -1088,6 +1262,22 @@ function App() {
     }
     const text = await file.text()
     loadDatasetText(text, file.name)
+    event.target.value = ''
+  }
+
+  const handleDashboardFileUpload = async (event) => {
+    const [file] = event.target.files ?? []
+    if (!file) {
+      return
+    }
+    try {
+      const text = await file.text()
+      loadDashboardSummaryText(text, file.name)
+    } catch {
+      setBenchmarkRows([])
+      setDashboardDatasetLabel(file.name)
+      setDashboardErrorText('The selected file is not a valid stress benchmark summary JSON file.')
+    }
     event.target.value = ''
   }
 
@@ -1132,6 +1322,24 @@ function App() {
   const topTokenData = useMemo(() => buildTopTokenData(rows), [rows])
   const slowestRows = useMemo(() => [...rows].sort((a, b) => b.latency - a.latency).slice(0, 10), [rows])
 
+  const dashboardSummary = useMemo(() => {
+    const sorted = [...benchmarkRows].sort((left, right) => left.workers - right.workers)
+    const bestStable = [...sorted]
+      .filter((row) => row.successRate === 100 && row.failureCount === 0 && row.backoffTriggers === 0)
+      .sort((left, right) => right.throughput - left.throughput)[0] ?? null
+    const firstBackoff = sorted.find((row) => row.backoffTriggers > 0) ?? null
+    const firstFailure = sorted.find((row) => row.failureCount > 0) ?? null
+
+    return {
+      bestStable,
+      firstBackoff,
+      firstFailure,
+      requestsPerConfig: sorted[0]?.totalRecords ?? null,
+      sourceLabel: sorted[0]?.sourceLabel ?? 'n/a',
+      totalFinalSslFailures: sorted.reduce((sum, row) => sum + (row.finalSslFailures ?? 0), 0),
+    }
+  }, [benchmarkRows])
+
   function handleChange(event) {
     const { name, value, type, checked } = event.target
     setForm((prev) => {
@@ -1161,9 +1369,6 @@ function App() {
     if (!form.curl_config.trim()) nextErrors.curl_config = 'Curl config path is required.'
     if (!form.results.trim()) nextErrors.results = 'Results output path is required.'
     if (!(Number(form.qps) > 0)) nextErrors.qps = 'QPS must be greater than 0.'
-    if (!(Number(form.max_workers) >= 1)) nextErrors.max_workers = 'Max workers must be at least 1.'
-    if (!(Number(form.initial_limit) >= 1)) nextErrors.initial_limit = 'Initial limit must be at least 1.'
-    if (!(Number(form.limit) >= 1)) nextErrors.limit = 'Limit must be at least 1.'
 
     setErrors(nextErrors)
     return Object.keys(nextErrors).length === 0
@@ -1190,6 +1395,7 @@ function App() {
     setMessage('Running scraper...')
 
     try {
+      const derivedConfig = deriveDemoRunConfig(form.qps)
       const response = await fetch('http://127.0.0.1:8000/api/run-demo', {
         method: 'POST',
         headers: {
@@ -1201,9 +1407,9 @@ function App() {
           curl_config: form.curl_config,
           results: form.results,
           qps: Number(form.qps),
-          max_workers: Number(form.max_workers),
-          initial_limit: Number(form.initial_limit),
-          limit: Number(form.limit),
+          max_workers: derivedConfig.maxWorkers,
+          initial_limit: derivedConfig.initialLimit,
+          limit: derivedConfig.limit,
         }),
       })
 
@@ -1271,18 +1477,12 @@ function App() {
         <AnalyticsTimeSeriesPage rows={rows} />
       ) : (
         <DashboardPage
-          rows={rows}
-          invalidLines={invalidLines}
-          datasetLabel={datasetLabel}
-          errorText={errorText}
-          onFileUpload={handleFileUpload}
-          onReloadSample={() => void loadBundledSample()}
-          summary={summary}
-          timelineData={timelineData}
-          sourceData={sourceData}
-          statusData={statusData}
-          topTokenData={topTokenData}
-          slowestRows={slowestRows}
+          benchmarkRows={benchmarkRows}
+          datasetLabel={dashboardDatasetLabel}
+          errorText={dashboardErrorText}
+          onFileUpload={handleDashboardFileUpload}
+          onReloadSample={() => void loadDashboardSample()}
+          dashboardSummary={dashboardSummary}
         />
       )}
     </main>

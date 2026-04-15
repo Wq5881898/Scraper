@@ -1,0 +1,1842 @@
+[
+  {
+    "label": "single-thread-stress",
+    "sources": [
+      "web2"
+    ],
+    "qps": 0.0,
+    "rounds": 1,
+    "addresses_per_round": 100,
+    "estimated_total_requests": 100,
+    "max_workers": 1,
+    "initial_limit": 1,
+    "elapsed_sec": 99.789,
+    "total_records": 100,
+    "success_count": 100,
+    "failure_count": 0,
+    "success_rate_pct": 100.0,
+    "avg_latency_ms": 992.94,
+    "throughput_rps": 1.002,
+    "status_code_counts": {
+      "200": 100
+    },
+    "error_type_counts": {},
+    "http_429_count": 0,
+    "http_403_count": 0,
+    "timeout_count": 0,
+    "conn_error_count": 0,
+    "backoff_trigger_count": 0,
+    "backoff_error_counts": {},
+    "resource_usage": {
+      "avg_cpu_pct": 75.93,
+      "peak_cpu_pct": 101.5,
+      "avg_memory_mb": 40.83,
+      "peak_memory_mb": 41.34,
+      "sample_count": 486
+    },
+    "round_results": [
+      {
+        "round": 1,
+        "elapsed_sec": 99.55,
+        "total_records": 100,
+        "success_count": 100,
+        "failure_count": 0,
+        "success_rate_pct": 100.0,
+        "avg_latency_ms": 992.94,
+        "invalid_lines": 0,
+        "status_code_counts": {
+          "200": 100
+        },
+        "error_type_counts": {},
+        "http_429_count": 0,
+        "http_403_count": 0,
+        "timeout_count": 0,
+        "conn_error_count": 0,
+        "backoff": {
+          "trigger_count": 0,
+          "error_type_counts": {},
+          "events": []
+        },
+        "results_path": "testdata\\stress_benchmarks\\single-thread-stress\\single-thread-stress-round-01.jsonl"
+      }
+    ]
+  },
+  {
+    "label": "low-thread-stress",
+    "sources": [
+      "web2"
+    ],
+    "qps": 0.0,
+    "rounds": 1,
+    "addresses_per_round": 100,
+    "estimated_total_requests": 100,
+    "max_workers": 2,
+    "initial_limit": 2,
+    "elapsed_sec": 58.43,
+    "total_records": 100,
+    "success_count": 100,
+    "failure_count": 0,
+    "success_rate_pct": 100.0,
+    "avg_latency_ms": 1160.01,
+    "throughput_rps": 1.711,
+    "status_code_counts": {
+      "200": 100
+    },
+    "error_type_counts": {},
+    "http_429_count": 0,
+    "http_403_count": 0,
+    "timeout_count": 0,
+    "conn_error_count": 0,
+    "backoff_trigger_count": 0,
+    "backoff_error_counts": {},
+    "resource_usage": {
+      "avg_cpu_pct": 154.32,
+      "peak_cpu_pct": 202.9,
+      "avg_memory_mb": 42.27,
+      "peak_memory_mb": 42.52,
+      "sample_count": 282
+    },
+    "round_results": [
+      {
+        "round": 1,
+        "elapsed_sec": 58.334,
+        "total_records": 100,
+        "success_count": 100,
+        "failure_count": 0,
+        "success_rate_pct": 100.0,
+        "avg_latency_ms": 1160.01,
+        "invalid_lines": 0,
+        "status_code_counts": {
+          "200": 100
+        },
+        "error_type_counts": {},
+        "http_429_count": 0,
+        "http_403_count": 0,
+        "timeout_count": 0,
+        "conn_error_count": 0,
+        "backoff": {
+          "trigger_count": 0,
+          "error_type_counts": {},
+          "events": []
+        },
+        "results_path": "testdata\\stress_benchmarks\\low-thread-stress\\low-thread-stress-round-01.jsonl"
+      }
+    ]
+  },
+  {
+    "label": "medium-thread-stress",
+    "sources": [
+      "web2"
+    ],
+    "qps": 0.0,
+    "rounds": 1,
+    "addresses_per_round": 100,
+    "estimated_total_requests": 100,
+    "max_workers": 4,
+    "initial_limit": 4,
+    "elapsed_sec": 40.299,
+    "total_records": 100,
+    "success_count": 100,
+    "failure_count": 0,
+    "success_rate_pct": 100.0,
+    "avg_latency_ms": 1573.14,
+    "throughput_rps": 2.481,
+    "status_code_counts": {
+      "200": 100
+    },
+    "error_type_counts": {},
+    "http_429_count": 0,
+    "http_403_count": 0,
+    "timeout_count": 0,
+    "conn_error_count": 0,
+    "backoff_trigger_count": 0,
+    "backoff_error_counts": {},
+    "resource_usage": {
+      "avg_cpu_pct": 277.35,
+      "peak_cpu_pct": 397.6,
+      "avg_memory_mb": 44.11,
+      "peak_memory_mb": 44.78,
+      "sample_count": 196
+    },
+    "round_results": [
+      {
+        "round": 1,
+        "elapsed_sec": 40.064,
+        "total_records": 100,
+        "success_count": 100,
+        "failure_count": 0,
+        "success_rate_pct": 100.0,
+        "avg_latency_ms": 1573.14,
+        "invalid_lines": 0,
+        "status_code_counts": {
+          "200": 100
+        },
+        "error_type_counts": {},
+        "http_429_count": 0,
+        "http_403_count": 0,
+        "timeout_count": 0,
+        "conn_error_count": 0,
+        "backoff": {
+          "trigger_count": 0,
+          "error_type_counts": {},
+          "events": []
+        },
+        "results_path": "testdata\\stress_benchmarks\\medium-thread-stress\\medium-thread-stress-round-01.jsonl"
+      }
+    ]
+  },
+  {
+    "label": "high-thread-stress",
+    "sources": [
+      "web2"
+    ],
+    "qps": 0.0,
+    "rounds": 1,
+    "addresses_per_round": 100,
+    "estimated_total_requests": 100,
+    "max_workers": 8,
+    "initial_limit": 8,
+    "elapsed_sec": 32.218,
+    "total_records": 100,
+    "success_count": 100,
+    "failure_count": 0,
+    "success_rate_pct": 100.0,
+    "avg_latency_ms": 2532.11,
+    "throughput_rps": 3.104,
+    "status_code_counts": {
+      "200": 100
+    },
+    "error_type_counts": {},
+    "http_429_count": 0,
+    "http_403_count": 0,
+    "timeout_count": 0,
+    "conn_error_count": 0,
+    "backoff_trigger_count": 0,
+    "backoff_error_counts": {},
+    "resource_usage": {
+      "avg_cpu_pct": 375.86,
+      "peak_cpu_pct": 657.2,
+      "avg_memory_mb": 47.07,
+      "peak_memory_mb": 48.51,
+      "sample_count": 157
+    },
+    "round_results": [
+      {
+        "round": 1,
+        "elapsed_sec": 32.081,
+        "total_records": 100,
+        "success_count": 100,
+        "failure_count": 0,
+        "success_rate_pct": 100.0,
+        "avg_latency_ms": 2532.11,
+        "invalid_lines": 0,
+        "status_code_counts": {
+          "200": 100
+        },
+        "error_type_counts": {},
+        "http_429_count": 0,
+        "http_403_count": 0,
+        "timeout_count": 0,
+        "conn_error_count": 0,
+        "backoff": {
+          "trigger_count": 0,
+          "error_type_counts": {},
+          "events": []
+        },
+        "results_path": "testdata\\stress_benchmarks\\high-thread-stress\\high-thread-stress-round-01.jsonl"
+      }
+    ]
+  },
+  {
+    "label": "very-high-thread-stress",
+    "sources": [
+      "web2"
+    ],
+    "qps": 0.0,
+    "rounds": 1,
+    "addresses_per_round": 100,
+    "estimated_total_requests": 100,
+    "max_workers": 16,
+    "initial_limit": 16,
+    "elapsed_sec": 28.867,
+    "total_records": 100,
+    "success_count": 100,
+    "failure_count": 0,
+    "success_rate_pct": 100.0,
+    "avg_latency_ms": 4420.28,
+    "throughput_rps": 3.464,
+    "status_code_counts": {
+      "200": 100
+    },
+    "error_type_counts": {},
+    "http_429_count": 0,
+    "http_403_count": 0,
+    "timeout_count": 0,
+    "conn_error_count": 0,
+    "backoff_trigger_count": 0,
+    "backoff_error_counts": {},
+    "resource_usage": {
+      "avg_cpu_pct": 416.31,
+      "peak_cpu_pct": 628.3,
+      "avg_memory_mb": 52.27,
+      "peak_memory_mb": 56.05,
+      "sample_count": 141
+    },
+    "round_results": [
+      {
+        "round": 1,
+        "elapsed_sec": 28.81,
+        "total_records": 100,
+        "success_count": 100,
+        "failure_count": 0,
+        "success_rate_pct": 100.0,
+        "avg_latency_ms": 4420.28,
+        "invalid_lines": 0,
+        "status_code_counts": {
+          "200": 100
+        },
+        "error_type_counts": {},
+        "http_429_count": 0,
+        "http_403_count": 0,
+        "timeout_count": 0,
+        "conn_error_count": 0,
+        "backoff": {
+          "trigger_count": 0,
+          "error_type_counts": {},
+          "events": []
+        },
+        "results_path": "testdata\\stress_benchmarks\\very-high-thread-stress\\very-high-thread-stress-round-01.jsonl"
+      }
+    ]
+  },
+  {
+    "label": "extreme-thread-stress",
+    "sources": [
+      "web2"
+    ],
+    "qps": 0.0,
+    "rounds": 1,
+    "addresses_per_round": 100,
+    "estimated_total_requests": 100,
+    "max_workers": 32,
+    "initial_limit": 32,
+    "elapsed_sec": 30.216,
+    "total_records": 100,
+    "success_count": 100,
+    "failure_count": 0,
+    "success_rate_pct": 100.0,
+    "avg_latency_ms": 7248.37,
+    "throughput_rps": 3.31,
+    "status_code_counts": {
+      "200": 100
+    },
+    "error_type_counts": {},
+    "http_429_count": 0,
+    "http_403_count": 0,
+    "timeout_count": 0,
+    "conn_error_count": 0,
+    "backoff_trigger_count": 0,
+    "backoff_error_counts": {},
+    "resource_usage": {
+      "avg_cpu_pct": 414.3,
+      "peak_cpu_pct": 623.1,
+      "avg_memory_mb": 59.23,
+      "peak_memory_mb": 66.03,
+      "sample_count": 144
+    },
+    "round_results": [
+      {
+        "round": 1,
+        "elapsed_sec": 30.046,
+        "total_records": 100,
+        "success_count": 100,
+        "failure_count": 0,
+        "success_rate_pct": 100.0,
+        "avg_latency_ms": 7248.37,
+        "invalid_lines": 0,
+        "status_code_counts": {
+          "200": 100
+        },
+        "error_type_counts": {},
+        "http_429_count": 0,
+        "http_403_count": 0,
+        "timeout_count": 0,
+        "conn_error_count": 0,
+        "backoff": {
+          "trigger_count": 0,
+          "error_type_counts": {},
+          "events": []
+        },
+        "results_path": "testdata\\stress_benchmarks\\extreme-thread-stress\\extreme-thread-stress-round-01.jsonl"
+      }
+    ]
+  },
+  {
+    "label": "ultra-thread-stress",
+    "sources": [
+      "web2"
+    ],
+    "qps": 0.0,
+    "rounds": 1,
+    "addresses_per_round": 100,
+    "estimated_total_requests": 100,
+    "max_workers": 64,
+    "initial_limit": 64,
+    "elapsed_sec": 33.513,
+    "total_records": 100,
+    "success_count": 100,
+    "failure_count": 0,
+    "success_rate_pct": 100.0,
+    "avg_latency_ms": 12093.75,
+    "throughput_rps": 2.984,
+    "status_code_counts": {
+      "200": 100
+    },
+    "error_type_counts": {},
+    "http_429_count": 0,
+    "http_403_count": 0,
+    "timeout_count": 0,
+    "conn_error_count": 0,
+    "backoff_trigger_count": 21,
+    "backoff_error_counts": {
+      "ConnectionError": 2,
+      "SSLError": 19
+    },
+    "resource_usage": {
+      "avg_cpu_pct": 429.85,
+      "peak_cpu_pct": 662.7,
+      "avg_memory_mb": 76.1,
+      "peak_memory_mb": 83.2,
+      "sample_count": 160
+    },
+    "round_results": [
+      {
+        "round": 1,
+        "elapsed_sec": 33.359,
+        "total_records": 100,
+        "success_count": 100,
+        "failure_count": 0,
+        "success_rate_pct": 100.0,
+        "avg_latency_ms": 12093.75,
+        "invalid_lines": 0,
+        "status_code_counts": {
+          "200": 100
+        },
+        "error_type_counts": {},
+        "http_429_count": 0,
+        "http_403_count": 0,
+        "timeout_count": 0,
+        "conn_error_count": 0,
+        "backoff": {
+          "trigger_count": 21,
+          "error_type_counts": {
+            "ConnectionError": 2,
+            "SSLError": 19
+          },
+          "events": [
+            {
+              "timestamp": 1776211914.1991599,
+              "attempt": 1,
+              "error_type": "ConnectionError",
+              "sleep_seconds": 0.5305
+            },
+            {
+              "timestamp": 1776211914.332969,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5395
+            },
+            {
+              "timestamp": 1776211915.2188632,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5255
+            },
+            {
+              "timestamp": 1776211915.3031523,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5376
+            },
+            {
+              "timestamp": 1776211915.3880892,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5153
+            },
+            {
+              "timestamp": 1776211915.602612,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5208
+            },
+            {
+              "timestamp": 1776211915.8319345,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.503
+            },
+            {
+              "timestamp": 1776211915.9587913,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5172
+            },
+            {
+              "timestamp": 1776211916.3939514,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5326
+            },
+            {
+              "timestamp": 1776211916.534083,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5164
+            },
+            {
+              "timestamp": 1776211916.5360174,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5032
+            },
+            {
+              "timestamp": 1776211916.589183,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5265
+            },
+            {
+              "timestamp": 1776211916.8725038,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5427
+            },
+            {
+              "timestamp": 1776211917.1468122,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5003
+            },
+            {
+              "timestamp": 1776211917.186702,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.541
+            },
+            {
+              "timestamp": 1776211917.4367492,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5489
+            },
+            {
+              "timestamp": 1776211917.4613116,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5178
+            },
+            {
+              "timestamp": 1776211917.5053709,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5157
+            },
+            {
+              "timestamp": 1776211917.5562623,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5475
+            },
+            {
+              "timestamp": 1776211917.683882,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5003
+            },
+            {
+              "timestamp": 1776211918.7023182,
+              "attempt": 1,
+              "error_type": "ConnectionError",
+              "sleep_seconds": 0.5194
+            }
+          ]
+        },
+        "results_path": "testdata\\stress_benchmarks\\ultra-thread-stress\\ultra-thread-stress-round-01.jsonl"
+      }
+    ]
+  },
+  {
+    "label": "max-thread-stress",
+    "sources": [
+      "web2"
+    ],
+    "qps": 0.0,
+    "rounds": 1,
+    "addresses_per_round": 100,
+    "estimated_total_requests": 100,
+    "max_workers": 128,
+    "initial_limit": 128,
+    "elapsed_sec": 85.601,
+    "total_records": 100,
+    "success_count": 50,
+    "failure_count": 50,
+    "success_rate_pct": 50.0,
+    "avg_latency_ms": 76611.43,
+    "throughput_rps": 1.168,
+    "status_code_counts": {
+      "200": 50
+    },
+    "error_type_counts": {
+      "SSLError": 50
+    },
+    "http_429_count": 0,
+    "http_403_count": 0,
+    "timeout_count": 0,
+    "conn_error_count": 0,
+    "backoff_trigger_count": 200,
+    "backoff_error_counts": {
+      "ConnectionError": 6,
+      "SSLError": 194
+    },
+    "resource_usage": {
+      "avg_cpu_pct": 453.23,
+      "peak_cpu_pct": 733.6,
+      "avg_memory_mb": 121.99,
+      "peak_memory_mb": 157.66,
+      "sample_count": 390
+    },
+    "round_results": [
+      {
+        "round": 1,
+        "elapsed_sec": 85.477,
+        "total_records": 100,
+        "success_count": 50,
+        "failure_count": 50,
+        "success_rate_pct": 50.0,
+        "avg_latency_ms": 76611.43,
+        "invalid_lines": 0,
+        "status_code_counts": {
+          "200": 50
+        },
+        "error_type_counts": {
+          "SSLError": 50
+        },
+        "http_429_count": 0,
+        "http_403_count": 0,
+        "timeout_count": 0,
+        "conn_error_count": 0,
+        "backoff": {
+          "trigger_count": 200,
+          "error_type_counts": {
+            "ConnectionError": 6,
+            "SSLError": 194
+          },
+          "events": [
+            {
+              "timestamp": 1776211952.5863237,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5214
+            },
+            {
+              "timestamp": 1776211952.5883448,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5419
+            },
+            {
+              "timestamp": 1776211952.7911437,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.524
+            },
+            {
+              "timestamp": 1776211953.2903378,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.537
+            },
+            {
+              "timestamp": 1776211953.4686925,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5325
+            },
+            {
+              "timestamp": 1776211953.4717357,
+              "attempt": 1,
+              "error_type": "ConnectionError",
+              "sleep_seconds": 0.5163
+            },
+            {
+              "timestamp": 1776211953.6207554,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5494
+            },
+            {
+              "timestamp": 1776211953.6334052,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5473
+            },
+            {
+              "timestamp": 1776211953.752822,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.55
+            },
+            {
+              "timestamp": 1776211953.8033736,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5229
+            },
+            {
+              "timestamp": 1776211954.0966249,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5203
+            },
+            {
+              "timestamp": 1776211954.0976417,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5096
+            },
+            {
+              "timestamp": 1776211954.0991848,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.55
+            },
+            {
+              "timestamp": 1776211954.1020498,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5317
+            },
+            {
+              "timestamp": 1776211954.439623,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5146
+            },
+            {
+              "timestamp": 1776211954.4930117,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5275
+            },
+            {
+              "timestamp": 1776211954.5201485,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5253
+            },
+            {
+              "timestamp": 1776211954.733654,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5368
+            },
+            {
+              "timestamp": 1776211955.0629373,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5339
+            },
+            {
+              "timestamp": 1776211955.112141,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5404
+            },
+            {
+              "timestamp": 1776211955.4396448,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5233
+            },
+            {
+              "timestamp": 1776211955.9979026,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5034
+            },
+            {
+              "timestamp": 1776211956.002208,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5123
+            },
+            {
+              "timestamp": 1776211956.0030937,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5386
+            },
+            {
+              "timestamp": 1776211956.0036635,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.526
+            },
+            {
+              "timestamp": 1776211956.0160825,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5
+            },
+            {
+              "timestamp": 1776211956.2887843,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5421
+            },
+            {
+              "timestamp": 1776211956.6755457,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5187
+            },
+            {
+              "timestamp": 1776211956.8107328,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5334
+            },
+            {
+              "timestamp": 1776211956.9385762,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5199
+            },
+            {
+              "timestamp": 1776211957.110683,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5487
+            },
+            {
+              "timestamp": 1776211957.3061938,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5478
+            },
+            {
+              "timestamp": 1776211957.3209908,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5106
+            },
+            {
+              "timestamp": 1776211957.3513546,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5364
+            },
+            {
+              "timestamp": 1776211957.430572,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5397
+            },
+            {
+              "timestamp": 1776211957.5083237,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5025
+            },
+            {
+              "timestamp": 1776211957.662878,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5137
+            },
+            {
+              "timestamp": 1776211957.9583142,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5219
+            },
+            {
+              "timestamp": 1776211958.1363878,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5
+            },
+            {
+              "timestamp": 1776211958.1368887,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5081
+            },
+            {
+              "timestamp": 1776211958.29338,
+              "attempt": 1,
+              "error_type": "ConnectionError",
+              "sleep_seconds": 0.534
+            },
+            {
+              "timestamp": 1776211958.2961435,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5342
+            },
+            {
+              "timestamp": 1776211958.3411498,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5291
+            },
+            {
+              "timestamp": 1776211958.4842465,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5335
+            },
+            {
+              "timestamp": 1776211958.5816457,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5047
+            },
+            {
+              "timestamp": 1776211958.7949839,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5359
+            },
+            {
+              "timestamp": 1776211959.0145497,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5217
+            },
+            {
+              "timestamp": 1776211959.2596676,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5411
+            },
+            {
+              "timestamp": 1776211959.783677,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5402
+            },
+            {
+              "timestamp": 1776211960.0282652,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5061
+            },
+            {
+              "timestamp": 1776211969.5457673,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5137
+            },
+            {
+              "timestamp": 1776211969.6565406,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5457
+            },
+            {
+              "timestamp": 1776211970.7561321,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5242
+            },
+            {
+              "timestamp": 1776211970.7563734,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.534
+            },
+            {
+              "timestamp": 1776211970.9404984,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5156
+            },
+            {
+              "timestamp": 1776211971.0110373,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5299
+            },
+            {
+              "timestamp": 1776211971.2136884,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5463
+            },
+            {
+              "timestamp": 1776211971.5134563,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5222
+            },
+            {
+              "timestamp": 1776211971.6637936,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5215
+            },
+            {
+              "timestamp": 1776211971.8057172,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5403
+            },
+            {
+              "timestamp": 1776211971.8298492,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5375
+            },
+            {
+              "timestamp": 1776211972.0352645,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5147
+            },
+            {
+              "timestamp": 1776211972.0707633,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5301
+            },
+            {
+              "timestamp": 1776211972.1149125,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.522
+            },
+            {
+              "timestamp": 1776211972.1675348,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5225
+            },
+            {
+              "timestamp": 1776211972.5503514,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5084
+            },
+            {
+              "timestamp": 1776211972.5783222,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.501
+            },
+            {
+              "timestamp": 1776211972.7651315,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5096
+            },
+            {
+              "timestamp": 1776211972.8118489,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5343
+            },
+            {
+              "timestamp": 1776211973.5072508,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5023
+            },
+            {
+              "timestamp": 1776211973.5076735,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5387
+            },
+            {
+              "timestamp": 1776211973.5085824,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5193
+            },
+            {
+              "timestamp": 1776211973.8006527,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5129
+            },
+            {
+              "timestamp": 1776211973.802061,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5375
+            },
+            {
+              "timestamp": 1776211973.842787,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5167
+            },
+            {
+              "timestamp": 1776211973.9961395,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5093
+            },
+            {
+              "timestamp": 1776211974.1040337,
+              "attempt": 1,
+              "error_type": "ConnectionError",
+              "sleep_seconds": 0.5392
+            },
+            {
+              "timestamp": 1776211974.124609,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5348
+            },
+            {
+              "timestamp": 1776211974.145407,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.522
+            },
+            {
+              "timestamp": 1776211974.3189154,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5247
+            },
+            {
+              "timestamp": 1776211974.3585737,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5277
+            },
+            {
+              "timestamp": 1776211974.3621933,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5211
+            },
+            {
+              "timestamp": 1776211974.738806,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5455
+            },
+            {
+              "timestamp": 1776211975.0482125,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5289
+            },
+            {
+              "timestamp": 1776211975.1195843,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.513
+            },
+            {
+              "timestamp": 1776211975.1632657,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5468
+            },
+            {
+              "timestamp": 1776211975.2331407,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5152
+            },
+            {
+              "timestamp": 1776211975.4094865,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5314
+            },
+            {
+              "timestamp": 1776211975.4583416,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5043
+            },
+            {
+              "timestamp": 1776211975.699494,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5372
+            },
+            {
+              "timestamp": 1776211976.2240772,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5045
+            },
+            {
+              "timestamp": 1776211976.4136598,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5448
+            },
+            {
+              "timestamp": 1776211976.5400398,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5232
+            },
+            {
+              "timestamp": 1776211976.8503208,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5135
+            },
+            {
+              "timestamp": 1776211976.8777928,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5235
+            },
+            {
+              "timestamp": 1776211976.9600134,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5086
+            },
+            {
+              "timestamp": 1776211977.149366,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5116
+            },
+            {
+              "timestamp": 1776211977.3759334,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.087
+            },
+            {
+              "timestamp": 1776211977.452349,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5004
+            },
+            {
+              "timestamp": 1776211977.867328,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.5383
+            },
+            {
+              "timestamp": 1776211977.9536302,
+              "attempt": 1,
+              "error_type": "SSLError",
+              "sleep_seconds": 0.538
+            },
+            {
+              "timestamp": 1776211979.0936248,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0772
+            },
+            {
+              "timestamp": 1776211979.2218554,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.033
+            },
+            {
+              "timestamp": 1776211979.3416917,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0453
+            },
+            {
+              "timestamp": 1776211979.427046,
+              "attempt": 2,
+              "error_type": "ConnectionError",
+              "sleep_seconds": 1.0354
+            },
+            {
+              "timestamp": 1776211979.767928,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0967
+            },
+            {
+              "timestamp": 1776211980.881389,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0137
+            },
+            {
+              "timestamp": 1776211981.2585528,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0936
+            },
+            {
+              "timestamp": 1776211981.3477023,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0367
+            },
+            {
+              "timestamp": 1776211981.3946521,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0092
+            },
+            {
+              "timestamp": 1776211981.5248125,
+              "attempt": 2,
+              "error_type": "ConnectionError",
+              "sleep_seconds": 1.08
+            },
+            {
+              "timestamp": 1776211981.5302734,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0
+            },
+            {
+              "timestamp": 1776211981.6866868,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0062
+            },
+            {
+              "timestamp": 1776211981.7354696,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.092
+            },
+            {
+              "timestamp": 1776211981.8945303,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0952
+            },
+            {
+              "timestamp": 1776211981.946971,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0974
+            },
+            {
+              "timestamp": 1776211982.105819,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0076
+            },
+            {
+              "timestamp": 1776211982.186525,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0675
+            },
+            {
+              "timestamp": 1776211982.1869884,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0992
+            },
+            {
+              "timestamp": 1776211982.3945582,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0454
+            },
+            {
+              "timestamp": 1776211982.594142,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.08
+            },
+            {
+              "timestamp": 1776211982.8219411,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0709
+            },
+            {
+              "timestamp": 1776211982.8223474,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0113
+            },
+            {
+              "timestamp": 1776211983.0988169,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0817
+            },
+            {
+              "timestamp": 1776211983.1948073,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0413
+            },
+            {
+              "timestamp": 1776211983.209486,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0865
+            },
+            {
+              "timestamp": 1776211983.5305605,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0813
+            },
+            {
+              "timestamp": 1776211983.5326848,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0026
+            },
+            {
+              "timestamp": 1776211983.7185023,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0743
+            },
+            {
+              "timestamp": 1776211984.25619,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0633
+            },
+            {
+              "timestamp": 1776211984.2779958,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0358
+            },
+            {
+              "timestamp": 1776211984.28544,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0567
+            },
+            {
+              "timestamp": 1776211984.4571853,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0946
+            },
+            {
+              "timestamp": 1776211984.5638642,
+              "attempt": 2,
+              "error_type": "ConnectionError",
+              "sleep_seconds": 1.0328
+            },
+            {
+              "timestamp": 1776211984.5782077,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0025
+            },
+            {
+              "timestamp": 1776211985.0950449,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0302
+            },
+            {
+              "timestamp": 1776211985.2129364,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0874
+            },
+            {
+              "timestamp": 1776211985.2244742,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0545
+            },
+            {
+              "timestamp": 1776211985.2423794,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0029
+            },
+            {
+              "timestamp": 1776211985.4347076,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.064
+            },
+            {
+              "timestamp": 1776211985.4355316,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0131
+            },
+            {
+              "timestamp": 1776211985.4367332,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0705
+            },
+            {
+              "timestamp": 1776211985.7299812,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0172
+            },
+            {
+              "timestamp": 1776211985.7303483,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0028
+            },
+            {
+              "timestamp": 1776211986.0213637,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0024
+            },
+            {
+              "timestamp": 1776211986.0336196,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0673
+            },
+            {
+              "timestamp": 1776211986.2366347,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0514
+            },
+            {
+              "timestamp": 1776211986.4286413,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0018
+            },
+            {
+              "timestamp": 1776211986.775484,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0361
+            },
+            {
+              "timestamp": 1776211987.8459766,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0324
+            },
+            {
+              "timestamp": 1776212000.047222,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0613
+            },
+            {
+              "timestamp": 1776212001.9973269,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.04
+            },
+            {
+              "timestamp": 1776212002.457696,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0206
+            },
+            {
+              "timestamp": 1776212002.7975748,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0049
+            },
+            {
+              "timestamp": 1776212002.942293,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0877
+            },
+            {
+              "timestamp": 1776212002.9437366,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0312
+            },
+            {
+              "timestamp": 1776212003.0469735,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0374
+            },
+            {
+              "timestamp": 1776212003.0472517,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0859
+            },
+            {
+              "timestamp": 1776212003.6065323,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0198
+            },
+            {
+              "timestamp": 1776212003.7018363,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0799
+            },
+            {
+              "timestamp": 1776212003.7070487,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0995
+            },
+            {
+              "timestamp": 1776212003.7324493,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0609
+            },
+            {
+              "timestamp": 1776212003.8234787,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0038
+            },
+            {
+              "timestamp": 1776212004.234866,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0154
+            },
+            {
+              "timestamp": 1776212004.254113,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0514
+            },
+            {
+              "timestamp": 1776212004.3554897,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.048
+            },
+            {
+              "timestamp": 1776212004.4760056,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.062
+            },
+            {
+              "timestamp": 1776212004.5020773,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0231
+            },
+            {
+              "timestamp": 1776212004.5724626,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0595
+            },
+            {
+              "timestamp": 1776212004.9556355,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.086
+            },
+            {
+              "timestamp": 1776212005.1449697,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0646
+            },
+            {
+              "timestamp": 1776212005.2364242,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0436
+            },
+            {
+              "timestamp": 1776212005.239668,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0409
+            },
+            {
+              "timestamp": 1776212005.2645457,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0108
+            },
+            {
+              "timestamp": 1776212005.2705956,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0582
+            },
+            {
+              "timestamp": 1776212005.5267394,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0584
+            },
+            {
+              "timestamp": 1776212005.581567,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0682
+            },
+            {
+              "timestamp": 1776212005.581961,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0451
+            },
+            {
+              "timestamp": 1776212005.6054535,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0611
+            },
+            {
+              "timestamp": 1776212005.7154806,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0303
+            },
+            {
+              "timestamp": 1776212005.7359,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0729
+            },
+            {
+              "timestamp": 1776212005.7669632,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0692
+            },
+            {
+              "timestamp": 1776212005.8487992,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0737
+            },
+            {
+              "timestamp": 1776212005.8535998,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.069
+            },
+            {
+              "timestamp": 1776212005.98817,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0952
+            },
+            {
+              "timestamp": 1776212006.0304592,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0891
+            },
+            {
+              "timestamp": 1776212006.0891542,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0001
+            },
+            {
+              "timestamp": 1776212006.0994735,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0931
+            },
+            {
+              "timestamp": 1776212006.1177213,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0639
+            },
+            {
+              "timestamp": 1776212006.239357,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0601
+            },
+            {
+              "timestamp": 1776212006.252008,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0857
+            },
+            {
+              "timestamp": 1776212006.2657762,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0136
+            },
+            {
+              "timestamp": 1776212006.2662346,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0848
+            },
+            {
+              "timestamp": 1776212006.3106427,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0752
+            },
+            {
+              "timestamp": 1776212006.319123,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0244
+            },
+            {
+              "timestamp": 1776212006.3501635,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0334
+            },
+            {
+              "timestamp": 1776212006.3783529,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0665
+            },
+            {
+              "timestamp": 1776212006.4606633,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0529
+            },
+            {
+              "timestamp": 1776212006.5057797,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0875
+            },
+            {
+              "timestamp": 1776212006.7992082,
+              "attempt": 2,
+              "error_type": "SSLError",
+              "sleep_seconds": 1.0471
+            }
+          ]
+        },
+        "results_path": "testdata\\stress_benchmarks\\max-thread-stress\\max-thread-stress-round-01.jsonl"
+      }
+    ]
+  }
+]
