@@ -7,3 +7,4 @@ results.local.bak.jsonl
 docs/
 logs/
 tools/
+testdata/stress_benchmarks/history/
