@@ -91,19 +91,6 @@ function compactAddress(value) {
   return `${value.slice(0, 6)}...${value.slice(-4)}`
 }
 
-function quantile(values, q) {
-  if (!values.length) {
-    return null
-  }
-  const sorted = [...values].sort((a, b) => a - b)
-  const location = (sorted.length - 1) * q
-  const base = Math.floor(location)
-  const rest = location - base
-  const lower = sorted[base]
-  const upper = sorted[base + 1] ?? lower
-  return lower + rest * (upper - lower)
-}
-
 function parseTokenName(token, index) {
   if (!token || typeof token !== 'object') {
     return `token-${index + 1}`
@@ -276,23 +263,11 @@ function parseStressBenchmarkSummary(payload) {
         finalConnectionFailures,
         avgCpu: coerceNumber(record.resource_usage?.avg_cpu_pct),
         peakMemory: coerceNumber(record.resource_usage?.peak_memory_mb),
-        sourceLabel: Array.isArray(record.sources) ? record.sources.join(', ') : 'n/a',
         addressesPerRound: coerceNumber(record.addresses_per_round) ?? totalRecords,
         mainSignal,
       }
     })
     .sort((left, right) => left.workers - right.workers)
-}
-
-function formatTime(timestampMs) {
-  if (!timestampMs) {
-    return 'n/a'
-  }
-  return new Date(timestampMs).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  })
 }
 
 function formatDateTime(timestampMs) {
@@ -365,13 +340,6 @@ function formatMemory(value) {
   return `${decimalFormatter.format(value)} MB`
 }
 
-function formatMoney(value) {
-  if (value === null || value === undefined) {
-    return '--'
-  }
-  return moneyFormatter.format(value)
-}
-
 function formatPreciseNumber(value) {
   if (value === null || value === undefined) {
     return '--'
@@ -425,15 +393,6 @@ function formatComparisonValue(value, type = 'text') {
   return String(value)
 }
 
-function areDifferent(left, right) {
-  const leftEmpty = left === null || left === undefined || left === ''
-  const rightEmpty = right === null || right === undefined || right === ''
-  if (leftEmpty && rightEmpty) {
-    return false
-  }
-  return left !== right
-}
-
 function areDisplayValuesDifferent(left, right, type = 'text') {
   const leftEmpty = left === null || left === undefined || left === ''
   const rightEmpty = right === null || right === undefined || right === ''
@@ -441,55 +400,6 @@ function areDisplayValuesDifferent(left, right, type = 'text') {
     return false
   }
   return formatComparisonValue(left, type) !== formatComparisonValue(right, type)
-}
-
-function buildSourceData(rows) {
-  const grouped = new Map()
-
-  rows.forEach((row) => {
-    if (!grouped.has(row.source)) {
-      grouped.set(row.source, { source: row.source, requests: 0, successes: 0, failures: 0, latencyTotal: 0 })
-    }
-    const current = grouped.get(row.source)
-    current.requests += 1
-    current.latencyTotal += row.latency
-    if (row.success) {
-      current.successes += 1
-    } else {
-      current.failures += 1
-    }
-  })
-
-  return [...grouped.values()].map((item) => ({
-    source: item.source,
-    requests: item.requests,
-    successes: item.successes,
-    failures: item.failures,
-    successRate: item.requests ? (item.successes / item.requests) * 100 : 0,
-    avgLatency: item.requests ? item.latencyTotal / item.requests : 0,
-  }))
-}
-
-function buildStatusData(rows) {
-  const grouped = new Map()
-  rows.forEach((row) => {
-    grouped.set(row.statusCode, (grouped.get(row.statusCode) ?? 0) + 1)
-  })
-  return [...grouped.entries()]
-    .map(([statusCode, count]) => ({ statusCode, count }))
-    .sort((a, b) => b.count - a.count)
-}
-
-function buildTopTokenData(rows) {
-  return rows
-    .filter((row) => row.marketCap && row.marketCap > 0)
-    .sort((a, b) => (b.marketCap ?? 0) - (a.marketCap ?? 0))
-    .slice(0, 6)
-    .map((row) => ({
-      tokenName: row.tokenName,
-      marketCap: row.marketCap,
-      source: row.source,
-    }))
 }
 
 function buildMetricTimeline(rows, selectedToken, valueKey) {
@@ -561,19 +471,10 @@ function AnalyticsPage({ rows }) {
   }, [rows])
 
   const [selectedToken, setSelectedToken] = useState('')
-
-  useEffect(() => {
-    if (!tokenOptions.length) {
-      setSelectedToken('')
-      return
-    }
-    if (!selectedToken || !tokenOptions.includes(selectedToken)) {
-      setSelectedToken(tokenOptions[0])
-    }
-  }, [tokenOptions, selectedToken])
+  const activeToken = tokenOptions.includes(selectedToken) ? selectedToken : (tokenOptions[0] ?? '')
 
   const latestBySource = useMemo(() => {
-    const tokenRows = rows.filter((row) => row.tokenName === selectedToken)
+    const tokenRows = rows.filter((row) => row.tokenName === activeToken)
     const pickLatest = (sourceId) =>
       [...tokenRows]
         .filter((row) => row.source === sourceId)
@@ -583,7 +484,7 @@ function AnalyticsPage({ rows }) {
       web1: pickLatest('web1'),
       web2: pickLatest('web2'),
     }
-  }, [rows, selectedToken])
+  }, [rows, activeToken])
 
   const comparisonFields = [
     { key: 'tokenName', label: 'Token Name' },
@@ -623,7 +524,7 @@ function AnalyticsPage({ rows }) {
         </div>
         <div className="status-box">
           <p className="status-label">Selected Token</p>
-          <select className="analytics-select" value={selectedToken} onChange={(event) => setSelectedToken(event.target.value)}>
+          <select className="analytics-select" value={activeToken} onChange={(event) => setSelectedToken(event.target.value)}>
             {tokenOptions.length ? (
               tokenOptions.map((token) => (
                 <option key={token} value={token}>
@@ -685,20 +586,12 @@ function AnalyticsTimeSeriesPage({ rows }) {
   }, [rows])
 
   const [selectedToken, setSelectedToken] = useState('')
-  useEffect(() => {
-    if (!tokenOptions.length) {
-      setSelectedToken('')
-      return
-    }
-    if (!selectedToken || !tokenOptions.includes(selectedToken)) {
-      setSelectedToken(tokenOptions[0])
-    }
-  }, [tokenOptions, selectedToken])
+  const activeToken = tokenOptions.includes(selectedToken) ? selectedToken : (tokenOptions[0] ?? '')
 
-  const priceTimeline = useMemo(() => buildMetricTimeline(rows, selectedToken, 'priceUsd'), [rows, selectedToken])
-  const holderTimeline = useMemo(() => buildMetricTimeline(rows, selectedToken, 'holderCount'), [rows, selectedToken])
-  const liquidityTimeline = useMemo(() => buildMetricTimeline(rows, selectedToken, 'liquidity'), [rows, selectedToken])
-  const fdvTimeline = useMemo(() => buildMetricTimeline(rows, selectedToken, 'fdv'), [rows, selectedToken])
+  const priceTimeline = useMemo(() => buildMetricTimeline(rows, activeToken, 'priceUsd'), [rows, activeToken])
+  const holderTimeline = useMemo(() => buildMetricTimeline(rows, activeToken, 'holderCount'), [rows, activeToken])
+  const liquidityTimeline = useMemo(() => buildMetricTimeline(rows, activeToken, 'liquidity'), [rows, activeToken])
+  const fdvTimeline = useMemo(() => buildMetricTimeline(rows, activeToken, 'fdv'), [rows, activeToken])
 
   const charts = [
     {
@@ -782,7 +675,7 @@ function AnalyticsTimeSeriesPage({ rows }) {
         </div>
         <div className="status-box">
           <p className="status-label">Selected Token</p>
-          <select className="analytics-select" value={selectedToken} onChange={(event) => setSelectedToken(event.target.value)}>
+          <select className="analytics-select" value={activeToken} onChange={(event) => setSelectedToken(event.target.value)}>
             {tokenOptions.length ? (
               tokenOptions.map((token) => (
                 <option key={token} value={token}>
@@ -794,7 +687,7 @@ function AnalyticsTimeSeriesPage({ rows }) {
             )}
           </select>
           <p className="status-message">
-            {selectedToken ? 'The charts below compare the latest time series for the selected token.' : 'No token data loaded yet.'}
+            {activeToken ? 'The charts below compare the latest time series for the selected token.' : 'No token data loaded yet.'}
           </p>
         </div>
       </section>
@@ -1021,48 +914,11 @@ function RunPage({ form, errors, onChange, onSubmit, onReset, runStatus, message
 
 function DashboardPage({
   benchmarkRows,
-  datasetLabel,
   errorText,
-  onFileUpload,
-  onReloadSample,
   dashboardSummary,
 }) {
   return (
     <>
-      <section className="panel hero-panel">
-        <div className="hero-copy">
-          <p className="eyebrow">Scraper Monitoring</p>
-          <h1>Scraper Monitoring Dashboard</h1>
-          <p className="hero-description">Track scraper throughput, stability, resource usage, and error signals.</p>
-        </div>
-
-        <div className="hero-actions">
-          <label className="button-primary" htmlFor="upload-jsonl">
-            Upload Summary JSON
-          </label>
-          <input id="upload-jsonl" type="file" accept=".json" onChange={onFileUpload} />
-
-          <button className="button-secondary" type="button" onClick={onReloadSample}>
-            Reload Stress Benchmark Sample
-          </button>
-
-          <div className="dataset-meta">
-            <p>
-              Dataset: <span>{datasetLabel}</span>
-            </p>
-            <p>
-              Benchmark configs: <span>{formatCount(benchmarkRows.length)}</span>
-            </p>
-            <p>
-              Requests per config: <span>{formatCount(dashboardSummary.requestsPerConfig)}</span>
-            </p>
-            <p>
-              Sources: <span>{dashboardSummary.sourceLabel}</span>
-            </p>
-          </div>
-        </div>
-      </section>
-
       {errorText ? <p className="error-banner">{errorText}</p> : null}
 
       <section className="stat-grid">
@@ -1256,11 +1112,7 @@ function DashboardPage({
 function App() {
   const [activeView, setActiveView] = useState('run')
   const [rows, setRows] = useState([])
-  const [invalidLines, setInvalidLines] = useState(0)
-  const [datasetLabel, setDatasetLabel] = useState('Loading bundled sample...')
-  const [errorText, setErrorText] = useState('')
   const [benchmarkRows, setBenchmarkRows] = useState([])
-  const [dashboardDatasetLabel, setDashboardDatasetLabel] = useState('Loading stress benchmark sample...')
   const [dashboardErrorText, setDashboardErrorText] = useState('')
   const [form, setForm] = useState(defaultForm)
   const [errors, setErrors] = useState({})
@@ -1268,12 +1120,9 @@ function App() {
   const [message, setMessage] = useState('Fill in the form and run a scraper demo.')
   const [currentPage, setCurrentPage] = useState(1)
 
-  const loadDatasetText = useCallback((rawText, label) => {
-    const { parsedRows, invalidLines: skippedLines } = parseJsonl(rawText)
+  const loadDatasetText = useCallback((rawText) => {
+    const { parsedRows } = parseJsonl(rawText)
     setRows(parsedRows)
-    setInvalidLines(skippedLines)
-    setDatasetLabel(label)
-    setErrorText(parsedRows.length ? '' : 'No valid JSONL records were found in the selected file.')
   }, [])
 
   const loadBundledSample = useCallback(async () => {
@@ -1285,9 +1134,6 @@ function App() {
       const payload = await response.json()
       const parsedRows = parseApiRecords(payload.records)
       setRows(parsedRows)
-      setInvalidLines(payload.invalid_lines ?? 0)
-      setDatasetLabel(payload.normalized_results_path || 'testdata/results.normalized.jsonl')
-      setErrorText(parsedRows.length ? '' : 'No valid normalized records were found.')
     } catch {
       try {
         const response = await fetch('/results.jsonl')
@@ -1295,21 +1141,17 @@ function App() {
           throw new Error(`HTTP ${response.status}`)
         }
         const text = await response.text()
-        loadDatasetText(text, 'public/results.jsonl')
+        loadDatasetText(text)
       } catch {
         setRows([])
-        setInvalidLines(0)
-        setDatasetLabel('No bundled sample detected')
-        setErrorText('Start api_server.py for normalized data, or put a JSONL file in dashboard/public/results.jsonl, or upload one from your machine.')
       }
     }
   }, [loadDatasetText])
 
-  const loadDashboardSummaryText = useCallback((rawText, label) => {
+  const loadDashboardSummaryText = useCallback((rawText) => {
     const payload = JSON.parse(rawText)
     const parsedSummary = parseStressBenchmarkSummary(payload)
     setBenchmarkRows(parsedSummary)
-    setDashboardDatasetLabel(label)
     setDashboardErrorText(parsedSummary.length ? '' : 'No valid stress benchmark configs were found in the selected summary file.')
   }, [])
 
@@ -1322,7 +1164,6 @@ function App() {
       const payload = await response.json()
       const parsedSummary = parseStressBenchmarkSummary(payload)
       setBenchmarkRows(parsedSummary)
-      setDashboardDatasetLabel(payload.path || 'testdata/stress_benchmarks/stress_benchmark_summary.json')
       setDashboardErrorText(parsedSummary.length ? '' : 'No valid stress benchmark configs were found.')
     } catch {
       try {
@@ -1331,11 +1172,10 @@ function App() {
           throw new Error(`HTTP ${response.status}`)
         }
         const text = await response.text()
-        loadDashboardSummaryText(text, 'public/stress_benchmark_summary.json')
+        loadDashboardSummaryText(text)
       } catch {
         setBenchmarkRows([])
-        setDashboardDatasetLabel('No stress benchmark sample detected')
-        setDashboardErrorText('Start api_server.py for stress benchmark data, or upload stress_benchmark_summary.json from your machine.')
+        setDashboardErrorText('Start api_server.py for stress benchmark data, or provide dashboard/public/stress_benchmark_summary.json.')
       }
     }
   }, [loadDashboardSummaryText])
@@ -1347,73 +1187,6 @@ function App() {
   useEffect(() => {
     void loadDashboardSample()
   }, [loadDashboardSample])
-
-  const handleFileUpload = async (event) => {
-    const [file] = event.target.files ?? []
-    if (!file) {
-      return
-    }
-    const text = await file.text()
-    loadDatasetText(text, file.name)
-    event.target.value = ''
-  }
-
-  const handleDashboardFileUpload = async (event) => {
-    const [file] = event.target.files ?? []
-    if (!file) {
-      return
-    }
-    try {
-      const text = await file.text()
-      loadDashboardSummaryText(text, file.name)
-    } catch {
-      setBenchmarkRows([])
-      setDashboardDatasetLabel(file.name)
-      setDashboardErrorText('The selected file is not a valid stress benchmark summary JSON file.')
-    }
-    event.target.value = ''
-  }
-
-  const summary = useMemo(() => {
-    const totalRequests = rows.length
-    if (!totalRequests) {
-      return {
-        totalRequests: 0,
-        successRate: null,
-        avgLatency: null,
-        p95Latency: null,
-        totalVolume: null,
-      }
-    }
-
-    const successes = rows.filter((row) => row.success).length
-    const latencies = rows.map((row) => row.latency).filter((value) => Number.isFinite(value))
-    const totalVolume = rows.reduce((sum, row) => sum + (row.volume24h ?? 0), 0)
-
-    return {
-      totalRequests,
-      successRate: (successes / totalRequests) * 100,
-      avgLatency: latencies.length ? latencies.reduce((sum, value) => sum + value, 0) / latencies.length : null,
-      p95Latency: quantile(latencies, 0.95),
-      totalVolume: totalVolume || null,
-    }
-  }, [rows])
-
-  const timelineData = useMemo(
-    () =>
-      rows.slice(-120).map((row) => ({
-        sequence: row.index,
-        time: formatTime(row.timestampMs),
-        latency: row.latency,
-        source: row.source,
-      })),
-    [rows],
-  )
-
-  const sourceData = useMemo(() => buildSourceData(rows), [rows])
-  const statusData = useMemo(() => buildStatusData(rows), [rows])
-  const topTokenData = useMemo(() => buildTopTokenData(rows), [rows])
-  const slowestRows = useMemo(() => [...rows].sort((a, b) => b.latency - a.latency).slice(0, 10), [rows])
 
   const dashboardSummary = useMemo(() => {
     const sorted = [...benchmarkRows].sort((left, right) => left.workers - right.workers)
@@ -1427,8 +1200,6 @@ function App() {
       bestStable,
       firstBackoff,
       firstFailure,
-      requestsPerConfig: sorted[0]?.totalRecords ?? null,
-      sourceLabel: sorted[0]?.sourceLabel ?? 'n/a',
       totalFinalSslFailures: sorted.reduce((sum, row) => sum + (row.finalSslFailures ?? 0), 0),
     }
   }, [benchmarkRows])
@@ -1519,9 +1290,6 @@ function App() {
 
       const parsedRows = parseApiRecords(payload.normalized_records ?? payload.records)
       setRows(parsedRows)
-      setInvalidLines(payload.invalid_lines ?? 0)
-      setDatasetLabel(payload.normalized_results_path || payload.results_path || form.results)
-      setErrorText('')
       setCurrentPage(1)
       setRunStatus('success')
       setMessage(payload.message || 'Run completed successfully.')
@@ -1571,10 +1339,7 @@ function App() {
       ) : (
         <DashboardPage
           benchmarkRows={benchmarkRows}
-          datasetLabel={dashboardDatasetLabel}
           errorText={dashboardErrorText}
-          onFileUpload={handleDashboardFileUpload}
-          onReloadSample={() => void loadDashboardSample()}
           dashboardSummary={dashboardSummary}
         />
       )}
