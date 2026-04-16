@@ -396,6 +396,13 @@ function formatCompactMoney(value) {
   return moneyFormatter.format(value)
 }
 
+function formatMillionsTick(value) {
+  if (value === null || value === undefined) {
+    return '--'
+  }
+  return `${decimalFormatter.format(value / 1_000_000)}M`
+}
+
 function formatComparisonValue(value, type = 'text') {
   if (value === null || value === undefined || value === '') {
     return '--'
@@ -486,16 +493,35 @@ function buildTopTokenData(rows) {
 }
 
 function buildMetricTimeline(rows, selectedToken, valueKey) {
-  return [...rows]
+  const grouped = new Map()
+
+  ;[...rows]
     .filter((row) => row.tokenName === selectedToken)
     .sort((a, b) => (a.timestampMs ?? 0) - (b.timestampMs ?? 0))
-    .map((row, index) => ({
-      index: index + 1,
-      time: formatMinuteTime(row.timestampMs),
-      fullTime: formatDateTime(row.timestampMs),
-      web1: row.source === 'web1' ? row[valueKey] ?? null : null,
-      web2: row.source === 'web2' ? row[valueKey] ?? null : null,
-    }))
+    .forEach((row) => {
+      const secondBucket = row.timestampMs ? Math.floor(row.timestampMs / 1000) * 1000 : null
+      const timestampKey = secondBucket ? String(secondBucket) : `missing-${row.source}-${row.taskId}`
+      if (!grouped.has(timestampKey)) {
+        grouped.set(timestampKey, {
+          timestampMs: secondBucket ?? row.timestampMs ?? null,
+          time: formatMinuteTime(secondBucket ?? row.timestampMs),
+          fullTime: formatDateTime(secondBucket ?? row.timestampMs),
+          web1: null,
+          web2: null,
+        })
+      }
+
+      const current = grouped.get(timestampKey)
+      current[row.source] = row[valueKey] ?? null
+    })
+
+  return [...grouped.values()].map((item, index) => ({
+    index: index + 1,
+    time: item.time,
+    fullTime: item.fullTime,
+    web1: item.web1,
+    web2: item.web2,
+  }))
 }
 
 function buildYAxisDomain(data, keys) {
@@ -659,7 +685,6 @@ function AnalyticsTimeSeriesPage({ rows }) {
   }, [rows])
 
   const [selectedToken, setSelectedToken] = useState('')
-
   useEffect(() => {
     if (!tokenOptions.length) {
       setSelectedToken('')
@@ -691,9 +716,59 @@ function AnalyticsTimeSeriesPage({ rows }) {
       yAxisDomain: buildYAxisDomain(holderTimeline, ['web1', 'web2']),
       tickFormatter: (value) => Math.round(value),
     },
-    { title: 'Liquidity', hint: 'Liquidity trend over time', data: liquidityTimeline, formatter: (value) => formatComparisonValue(value, 'money') },
-    { title: 'FDV', hint: 'FDV trend over time', data: fdvTimeline, formatter: (value) => formatComparisonValue(value, 'money') },
+    {
+      title: 'Liquidity',
+      hint: 'Liquidity trend over time',
+      data: liquidityTimeline,
+      formatter: (value) => formatComparisonValue(value, 'money'),
+      tickFormatter: (value) => formatMillionsTick(value),
+    },
+    {
+      title: 'FDV',
+      hint: 'FDV trend over time',
+      data: fdvTimeline,
+      formatter: (value) => formatComparisonValue(value, 'money'),
+      tickFormatter: (value) => formatMillionsTick(value),
+    },
   ]
+
+  function renderSharedTooltip(chart) {
+    return function SharedTooltip({ active, payload }) {
+      if (!active || !payload?.length) {
+        return null
+      }
+
+      const point = payload[0]?.payload
+      if (!point) {
+        return null
+      }
+
+      const items = [
+        Number.isFinite(point.web1)
+          ? { seriesLabel: 'Web1', formattedValue: chart.formatter(point.web1) }
+          : null,
+        Number.isFinite(point.web2)
+          ? { seriesLabel: 'Web2', formattedValue: chart.formatter(point.web2) }
+          : null,
+      ].filter(Boolean)
+
+      if (!items.length) {
+        return null
+      }
+
+      return (
+        <div className="chart-point-tooltip chart-point-tooltip-inline">
+          {items.map((item) => (
+            <div key={item.seriesLabel} className="chart-point-tooltip-row">
+              <strong>{item.seriesLabel}</strong>
+              <span>{item.formattedValue}</span>
+            </div>
+          ))}
+          <small>{point.fullTime || 'n/a'}</small>
+        </div>
+      )
+    }
+  }
 
   return (
     <>
@@ -735,19 +810,37 @@ function AnalyticsTimeSeriesPage({ rows }) {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chart.data}>
                   <CartesianGrid strokeDasharray="4 4" stroke="#d4d7dc" />
-                  <XAxis dataKey="time" tick={{ fontSize: 12 }} minTickGap={24} />
+                  <Tooltip content={renderSharedTooltip(chart)} cursor={{ stroke: '#c7d2fe', strokeWidth: 1 }} />
+                  <XAxis
+                    dataKey="time"
+                    tick={{ fontSize: 12 }}
+                    minTickGap={24}
+                    interval="preserveStartEnd"
+                    padding={{ left: 16, right: 8 }}
+                  />
                   <YAxis
                     tick={{ fontSize: 12 }}
                     domain={chart.yAxisDomain ?? ['auto', 'auto']}
                     tickFormatter={(value) => (chart.tickFormatter ? chart.tickFormatter(value) : value)}
                   />
-                  <Tooltip
-                    formatter={(value) => chart.formatter(value)}
-                    labelFormatter={(value, payload) => payload?.[0]?.payload?.fullTime || value}
-                    contentStyle={{ borderRadius: 12, border: '1px solid #d9e0ea' }}
+                  <Line
+                    type="linear"
+                    dataKey="web1"
+                    stroke="#1d4ed8"
+                    strokeWidth={2.5}
+                    dot={{ r: 3.5, fill: '#ffffff', stroke: '#1d4ed8', strokeWidth: 2 }}
+                    activeDot={{ r: 5, fill: '#ffffff', stroke: '#1d4ed8', strokeWidth: 2 }}
+                    connectNulls
                   />
-                  <Line type="monotone" dataKey="web1" stroke="#1d4ed8" strokeWidth={2.5} dot={false} connectNulls />
-                  <Line type="monotone" dataKey="web2" stroke="#0f766e" strokeWidth={2.5} dot={false} connectNulls />
+                  <Line
+                    type="linear"
+                    dataKey="web2"
+                    stroke="#0f766e"
+                    strokeWidth={2.5}
+                    dot={{ r: 3.5, fill: '#ffffff', stroke: '#0f766e', strokeWidth: 2 }}
+                    activeDot={{ r: 5, fill: '#ffffff', stroke: '#0f766e', strokeWidth: 2 }}
+                    connectNulls
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>

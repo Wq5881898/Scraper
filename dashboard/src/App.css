@@ -436,8 +436,45 @@ tbody tr:hover {
 }
 
 .chart-wrap {
+  position: relative;
   width: 100%;
   height: 270px;
+}
+
+.chart-point-tooltip {
+  min-width: 120px;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #d9e0ea;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 10px 24px rgb(15 23 42 / 12%);
+  display: grid;
+  gap: 0.18rem;
+  font-size: 0.82rem;
+}
+
+.chart-point-tooltip-inline {
+  pointer-events: none;
+}
+
+.chart-point-tooltip strong,
+.chart-point-tooltip span,
+.chart-point-tooltip small {
+  margin: 0;
+}
+
+.chart-point-tooltip small {
+  color: var(--text-muted);
+}
+
+.chart-point-tooltip-row {
+  display: grid;
+  gap: 0.1rem;
+  margin-bottom: 0.35rem;
+}
+
+.chart-point-tooltip-row:last-of-type {
+  margin-bottom: 0.1rem;
 }
 
 .table-card {
