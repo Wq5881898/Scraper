@@ -56,7 +56,6 @@
   padding: clamp(1rem, 2vw, 1.5rem);
 }
 
-.hero-copy h1,
 .hero-panel h1 {
   margin: 0.2rem 0 0.5rem;
   font-size: clamp(1.5rem, 3vw, 2.35rem);
@@ -79,7 +78,6 @@
   color: var(--text-muted);
 }
 
-.hero-actions,
 .status-box {
   border-radius: 16px;
   border: 1px solid var(--line);
@@ -126,14 +124,6 @@
   color: #334155;
 }
 
-#upload-jsonl {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-  pointer-events: none;
-}
-
 .button-primary,
 .button-secondary {
   border-radius: 12px;
@@ -168,26 +158,11 @@
   cursor: not-allowed;
 }
 
-.dataset-meta {
-  border-top: 1px dashed #bed8f5;
-  padding-top: 0.55rem;
-  display: grid;
-  gap: 0.24rem;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.82rem;
-}
-
-.dataset-meta p,
 .preview-count,
 .footer-note p {
   margin: 0;
 }
 
-.dataset-meta p {
-  color: #385169;
-}
-
-.dataset-meta span,
 .footer-note span {
   color: #0f172a;
 }
